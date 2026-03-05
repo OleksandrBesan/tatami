@@ -305,11 +305,11 @@ func (c *CreateView) View() string {
 	}
 
 	// Help text
-	help := "[tab]next  [ctrl+t]template  [enter]save  [esc]cancel"
+	help := "[tab]next  [ctrl+p]template  [enter]save  [esc]cancel"
 	if c.activeField == fieldPath {
-		help = "[tab]autocomplete  [ctrl+t]template  [enter]save  [esc]cancel"
+		help = "[tab]autocomplete  [ctrl+p]template  [enter]save  [esc]cancel"
 	} else if c.activeField == fieldLayoutType {
-		help = "[←/→]change  [ctrl+t]template  [enter]save  [esc]cancel"
+		help = "[←/→]change  [ctrl+p]template  [enter]save  [esc]cancel"
 	}
 	b.WriteString(helpStyle.Render(help))
 

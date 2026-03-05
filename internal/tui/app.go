@@ -17,6 +17,7 @@ const (
 	ViewActions
 	ViewLayout
 	ViewTemplates
+	ViewFolderInput
 )
 
 // Result represents the outcome of the TUI session
@@ -38,6 +39,7 @@ type App struct {
 	actionsView  *ActionView
 	layoutEditor *LayoutEditor
 	templateView *TemplateView
+	folderInput  *FolderInput
 	result       *Result
 	width        int
 	height       int
@@ -97,10 +99,36 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a.updateLayout(msg)
 		case ViewTemplates:
 			return a.updateTemplates(msg)
+		case ViewFolderInput:
+			return a.updateFolderInput(msg)
 		}
 	}
 
 	return a, nil
+}
+
+func (a *App) updateFolderInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc":
+		a.currentView = ViewList
+		return a, nil
+
+	case "enter":
+		folderPath := a.folderInput.Value()
+		if folderPath != "" {
+			// Set current folder to the new path and go to create view
+			a.listView.SetCurrentFolder(folderPath)
+			a.createView.Reset()
+			a.createView.SetFolder(folderPath)
+			a.currentView = ViewCreate
+			return a, nil
+		}
+		a.currentView = ViewList
+		return a, nil
+
+	default:
+		return a, a.folderInput.Update(msg)
+	}
 }
 
 func (a *App) updateList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -177,6 +205,12 @@ func (a *App) updateList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return a, nil
 
+	case "f":
+		// Create folder
+		a.folderInput = NewFolderInput(a.listView.CurrentFolder())
+		a.currentView = ViewFolderInput
+		return a, nil
+
 	default:
 		return a, a.listView.Update(msg)
 	}
@@ -229,7 +263,7 @@ func (a *App) updateCreate(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		a.currentView = ViewLayout
 		return a, nil
 
-	case "ctrl+t":
+	case "ctrl+p":
 		// Open template picker
 		a.templateView = NewTemplateView()
 		a.previousView = ViewCreate
@@ -337,6 +371,8 @@ func (a *App) View() string {
 		return boxStyle.Render(a.layoutEditor.View())
 	case ViewTemplates:
 		return a.templateView.View()
+	case ViewFolderInput:
+		return a.folderInput.View()
 	default:
 		return ""
 	}

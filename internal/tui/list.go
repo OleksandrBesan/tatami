@@ -187,6 +187,13 @@ func (l *ListView) Refresh() {
 	l.refreshItems()
 }
 
+// SetCurrentFolder sets the current folder path
+func (l *ListView) SetCurrentFolder(folder string) {
+	l.currentFolder = folder
+	l.cursor = 0
+	l.refreshItems()
+}
+
 // Update handles input for the list view
 func (l *ListView) Update(msg tea.Msg) tea.Cmd {
 	if l.filtering {
