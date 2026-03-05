@@ -4,49 +4,71 @@ package workspace
 type Template struct {
 	Name        string
 	Description string
+	MainCmd     string // Command to run in the original (left/top) pane
 	Panes       []Pane
 }
 
 // GetTemplates returns all available layout templates
 func GetTemplates() []Template {
 	return []Template{
+		// nvim LEFT layouts
 		{
-			Name:        "nvim-right",
+			Name:        "nvim-left",
+			Description: "nvim LEFT, term RIGHT",
+			MainCmd:     "nvim",
+			Panes: []Pane{
+				{Command: "", Direction: "right"},
+			},
+		},
+		{
+			Name:        "nvim-left-2term",
+			Description: "nvim LEFT, term RIGHT TOP, term RIGHT BOTTOM",
+			MainCmd:     "nvim",
+			Panes: []Pane{
+				{Command: "", Direction: "right"},
+				{Command: "", Direction: "down"},
+			},
+		},
+		{
+			Name:        "nvim-left-lazygit",
+			Description: "nvim LEFT, lazygit RIGHT",
+			MainCmd:     "nvim",
+			Panes: []Pane{
+				{Command: "lazygit", Direction: "right"},
+			},
+		},
+		{
+			Name:        "nvim-top",
+			Description: "nvim TOP, term BOTTOM",
+			MainCmd:     "nvim",
+			Panes: []Pane{
+				{Command: "", Direction: "down"},
+			},
+		},
+		// term LEFT layouts
+		{
+			Name:        "term-left-nvim",
 			Description: "term LEFT, nvim RIGHT",
 			Panes: []Pane{
 				{Command: "nvim", Direction: "right"},
 			},
 		},
 		{
-			Name:        "nvim-bottom",
-			Description: "term TOP, nvim BOTTOM",
-			Panes: []Pane{
-				{Command: "nvim", Direction: "down"},
-			},
-		},
-		{
-			Name:        "lazygit-right",
+			Name:        "term-left-lazygit",
 			Description: "term LEFT, lazygit RIGHT",
 			Panes: []Pane{
 				{Command: "lazygit", Direction: "right"},
 			},
 		},
 		{
-			Name:        "nvim-right-term-below",
-			Description: "term LEFT, nvim RIGHT TOP, term RIGHT BOTTOM",
-			Panes: []Pane{
-				{Command: "nvim", Direction: "right"},
-				{Command: "", Direction: "down"},
-			},
-		},
-		{
-			Name:        "dev-stack",
+			Name:        "term-left-nvim-lazygit",
 			Description: "term LEFT, nvim RIGHT TOP, lazygit RIGHT BOTTOM",
 			Panes: []Pane{
 				{Command: "nvim", Direction: "right"},
 				{Command: "lazygit", Direction: "down"},
 			},
 		},
+		// terminal only layouts
 		{
 			Name:        "2-side",
 			Description: "term LEFT, term RIGHT",
@@ -58,22 +80,6 @@ func GetTemplates() []Template {
 			Name:        "2-stack",
 			Description: "term TOP, term BOTTOM",
 			Panes: []Pane{
-				{Command: "", Direction: "down"},
-			},
-		},
-		{
-			Name:        "3-side",
-			Description: "term LEFT, term CENTER, term RIGHT",
-			Panes: []Pane{
-				{Command: "", Direction: "right"},
-				{Command: "", Direction: "right"},
-			},
-		},
-		{
-			Name:        "3-stack",
-			Description: "term TOP, term MIDDLE, term BOTTOM",
-			Panes: []Pane{
-				{Command: "", Direction: "down"},
 				{Command: "", Direction: "down"},
 			},
 		},

@@ -24,6 +24,7 @@ type CreateView struct {
 	layoutType   workspace.LayoutType
 	layoutTypes  []workspace.LayoutType
 	layoutPanes  []workspace.Pane
+	layoutMainCmd string
 	templateName string
 
 	activeField createField
@@ -56,6 +57,7 @@ func (c *CreateView) Reset() {
 	c.pathPicker.SetValue("")
 	c.layoutType = workspace.LayoutNone
 	c.layoutPanes = nil
+	c.layoutMainCmd = ""
 	c.templateName = ""
 	c.activeField = fieldName
 	c.editing = false
@@ -71,6 +73,7 @@ func (c *CreateView) EditWorkspace(ws *workspace.Workspace) {
 	c.pathPicker.SetValue(ws.Path)
 	c.layoutType = ws.Layout.Type
 	c.layoutPanes = ws.Layout.Panes
+	c.layoutMainCmd = ws.Layout.MainCmd
 	c.templateName = ""
 	c.activeField = fieldName
 	c.editing = true
@@ -83,6 +86,7 @@ func (c *CreateView) EditWorkspace(ws *workspace.Workspace) {
 // ApplyTemplate applies a template to the current workspace
 func (c *CreateView) ApplyTemplate(tmpl *workspace.Template) {
 	c.layoutPanes = tmpl.Panes
+	c.layoutMainCmd = tmpl.MainCmd
 	c.templateName = tmpl.Name
 	if c.layoutType == workspace.LayoutNone {
 		c.layoutType = workspace.LayoutZellij
@@ -111,6 +115,7 @@ func (c *CreateView) GetWorkspace() *workspace.Workspace {
 		c.pathPicker.Value(),
 	)
 	ws.Layout.Type = c.layoutType
+	ws.Layout.MainCmd = c.layoutMainCmd
 	ws.Layout.Panes = c.layoutPanes
 	return ws
 }

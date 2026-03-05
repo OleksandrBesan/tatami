@@ -79,6 +79,30 @@ func (z *ZellijRunner) RunWithLayout(ws *workspace.Workspace) error {
 		}
 	}
 
+	// If there's a main command, focus first pane and run it
+	if ws.Layout.MainCmd != "" {
+		// Focus the first pane
+		if err := z.FocusFirstPane(); err != nil {
+			return fmt.Errorf("failed to focus first pane: %w", err)
+		}
+		// Write the command
+		if err := z.WriteChars(ws.Layout.MainCmd + "\n"); err != nil {
+			return fmt.Errorf("failed to run main command: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// FocusFirstPane focuses the first pane in the current tab
+func (z *ZellijRunner) FocusFirstPane() error {
+	// Move to first pane by going left/up multiple times
+	for i := 0; i < 10; i++ {
+		exec.Command("zellij", "action", "move-focus", "left").Run()
+	}
+	for i := 0; i < 10; i++ {
+		exec.Command("zellij", "action", "move-focus", "up").Run()
+	}
 	return nil
 }
 

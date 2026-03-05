@@ -17,8 +17,9 @@ type Pane struct {
 
 // Layout represents the pane arrangement for a workspace
 type Layout struct {
-	Type  LayoutType `json:"type"`
-	Panes []Pane     `json:"panes"`
+	Type    LayoutType `json:"type"`
+	MainCmd string     `json:"main_cmd,omitempty"` // Command for the original (left/top) pane
+	Panes   []Pane     `json:"panes"`
 }
 
 // Workspace represents a terminal workspace

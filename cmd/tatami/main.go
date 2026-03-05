@@ -133,7 +133,8 @@ func handleResult(result *tui.Result) error {
 			Name: ws.Name,
 			Path: ws.Path,
 			Layout: workspace.Layout{
-				Panes: result.Template.Panes,
+				MainCmd: result.Template.MainCmd,
+				Panes:   result.Template.Panes,
 			},
 		}
 		if zellij.IsInsideSession() {
