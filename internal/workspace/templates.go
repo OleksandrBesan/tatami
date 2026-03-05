@@ -8,82 +8,81 @@ type Template struct {
 }
 
 // GetTemplates returns all available layout templates
+// Main pane (left/top) is always a terminal
+// Direction: "right" = new pane RIGHT, "down" = new pane BELOW
 func GetTemplates() []Template {
 	return []Template{
 		{
-			Name:        "editor-right",
-			Description: "Editor left, terminal right",
+			Name:        "term+nvim",
+			Description: "[term | nvim]",
 			Panes: []Pane{
 				{Command: "nvim", Direction: "right"},
 			},
 		},
 		{
-			Name:        "editor-left",
-			Description: "Terminal left, editor right",
+			Name:        "term+lazygit",
+			Description: "[term | lazygit]",
 			Panes: []Pane{
-				{Command: "", Direction: "right"},
-				{Command: "nvim", Direction: ""},
+				{Command: "lazygit", Direction: "right"},
 			},
 		},
 		{
-			Name:        "editor-top",
-			Description: "Editor top, terminal bottom",
+			Name:        "term/nvim",
+			Description: "[term / nvim]",
 			Panes: []Pane{
 				{Command: "nvim", Direction: "down"},
 			},
 		},
 		{
-			Name:        "editor-bottom",
-			Description: "Terminal top, editor bottom",
-			Panes: []Pane{
-				{Command: "", Direction: "down"},
-				{Command: "nvim", Direction: ""},
-			},
-		},
-		{
-			Name:        "editor-2term",
-			Description: "Editor left, 2 terminals right",
+			Name:        "term+nvim/term",
+			Description: "[term | nvim / term]",
 			Panes: []Pane{
 				{Command: "nvim", Direction: "right"},
 				{Command: "", Direction: "down"},
 			},
 		},
 		{
-			Name:        "lazygit-right",
-			Description: "Editor left, lazygit right",
+			Name:        "term+term/term",
+			Description: "[term | term / term]",
 			Panes: []Pane{
-				{Command: "nvim", Direction: "right"},
-				{Command: "lazygit", Direction: ""},
-			},
-		},
-		{
-			Name:        "dev-full",
-			Description: "Editor, terminal, lazygit",
-			Panes: []Pane{
-				{Command: "nvim", Direction: "right"},
+				{Command: "", Direction: "right"},
 				{Command: "", Direction: "down"},
-				{Command: "lazygit", Direction: ""},
 			},
 		},
 		{
-			Name:        "terminals-h",
-			Description: "2 terminals side by side",
+			Name:        "term+nvim/lazygit",
+			Description: "[term | nvim / lazygit]",
+			Panes: []Pane{
+				{Command: "nvim", Direction: "right"},
+				{Command: "lazygit", Direction: "down"},
+			},
+		},
+		{
+			Name:        "2h",
+			Description: "[term | term]",
 			Panes: []Pane{
 				{Command: "", Direction: "right"},
 			},
 		},
 		{
-			Name:        "terminals-v",
-			Description: "2 terminals stacked",
+			Name:        "2v",
+			Description: "[term / term]",
 			Panes: []Pane{
 				{Command: "", Direction: "down"},
 			},
 		},
 		{
-			Name:        "terminals-quad",
-			Description: "4 terminals in grid",
+			Name:        "3h",
+			Description: "[term | term | term]",
 			Panes: []Pane{
 				{Command: "", Direction: "right"},
+				{Command: "", Direction: "right"},
+			},
+		},
+		{
+			Name:        "3v",
+			Description: "[term / term / term]",
+			Panes: []Pane{
 				{Command: "", Direction: "down"},
 				{Command: "", Direction: "down"},
 			},
