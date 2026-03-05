@@ -132,3 +132,112 @@ func (s *Store) Filter(query string) []Workspace {
 	}
 	return filtered
 }
+
+// QuickAccess returns workspaces marked as quick access
+func (s *Store) QuickAccess() []Workspace {
+	var result []Workspace
+	for _, ws := range s.workspaces {
+		if ws.QuickAccess {
+			result = append(result, ws)
+		}
+	}
+	return result
+}
+
+// ToggleQuickAccess toggles quick access for a workspace
+func (s *Store) ToggleQuickAccess(name string) error {
+	for i := range s.workspaces {
+		if s.workspaces[i].Name == name {
+			s.workspaces[i].QuickAccess = !s.workspaces[i].QuickAccess
+			return s.save()
+		}
+	}
+	return ErrWorkspaceNotFound
+}
+
+// ListFolders returns all unique folder paths
+func (s *Store) ListFolders() []string {
+	folderSet := make(map[string]bool)
+	for _, ws := range s.workspaces {
+		if ws.Folder != "" {
+			// Add folder and all parent folders
+			parts := strings.Split(ws.Folder, "/")
+			path := ""
+			for _, part := range parts {
+				if part == "" {
+					continue
+				}
+				if path == "" {
+					path = part
+				} else {
+					path = path + "/" + part
+				}
+				folderSet[path] = true
+			}
+		}
+	}
+
+	var folders []string
+	for f := range folderSet {
+		folders = append(folders, f)
+	}
+	return folders
+}
+
+// ListInFolder returns workspaces in a specific folder (not subfolders)
+func (s *Store) ListInFolder(folder string) []Workspace {
+	var result []Workspace
+	for _, ws := range s.workspaces {
+		if ws.Folder == folder {
+			result = append(result, ws)
+		}
+	}
+	return result
+}
+
+// ListSubfolders returns immediate subfolders of a folder
+func (s *Store) ListSubfolders(folder string) []string {
+	subfolderSet := make(map[string]bool)
+	prefix := folder
+	if prefix != "" {
+		prefix = prefix + "/"
+	}
+
+	for _, ws := range s.workspaces {
+		if ws.Folder == "" {
+			continue
+		}
+		wsFolder := ws.Folder
+		if prefix == "" {
+			// Root level - get first part of folder
+			parts := strings.SplitN(wsFolder, "/", 2)
+			if len(parts) > 0 && parts[0] != "" {
+				subfolderSet[parts[0]] = true
+			}
+		} else if strings.HasPrefix(wsFolder, prefix) {
+			// Get next level
+			rest := strings.TrimPrefix(wsFolder, prefix)
+			parts := strings.SplitN(rest, "/", 2)
+			if len(parts) > 0 && parts[0] != "" {
+				subfolderSet[parts[0]] = true
+			}
+		}
+	}
+
+	var subfolders []string
+	for f := range subfolderSet {
+		subfolders = append(subfolders, f)
+	}
+	return subfolders
+}
+
+// ListRootWorkspaces returns workspaces not in any folder
+func (s *Store) ListRootWorkspaces() []Workspace {
+	var result []Workspace
+	for _, ws := range s.workspaces {
+		if ws.Folder == "" {
+			result = append(result, ws)
+		}
+	}
+	return result
+}

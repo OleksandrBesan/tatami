@@ -54,7 +54,7 @@ func NewApp(store *workspace.Store) *App {
 		zellij:       zellij,
 		tmux:         tmux,
 		currentView:  ViewList,
-		listView:     NewListView(store.List()),
+		listView:     NewListView(store),
 		createView:   NewCreateView(),
 		layoutEditor: NewLayoutEditor(),
 	}
@@ -119,33 +119,61 @@ func (a *App) updateList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 
 	switch msg.String() {
-	case "q", "esc":
+	case "q":
 		return a, tea.Quit
 
-	case "enter":
-		if ws := a.listView.Selected(); ws != nil {
-			a.actionsView = NewActionView(ws, a.zellij.IsInsideSession(), a.tmux.IsInsideSession())
+	case "esc":
+		// Go back if in folder, otherwise quit
+		if a.listView.CurrentFolder() != "" {
+			a.listView.EnterFolder("..")
+			return a, nil
+		}
+		return a, tea.Quit
+
+	case "enter", "l":
+		item := a.listView.Selected()
+		if item == nil {
+			return a, nil
+		}
+		switch item.Type {
+		case "folder":
+			a.listView.EnterFolder(item.Name)
+		case "workspace":
+			a.actionsView = NewActionView(item.Workspace, a.zellij.IsInsideSession(), a.tmux.IsInsideSession())
 			a.currentView = ViewActions
 		}
 		return a, nil
 
 	case "n":
 		a.createView.Reset()
+		// Set current folder for new workspace
+		a.createView.SetFolder(a.listView.CurrentFolder())
 		a.currentView = ViewCreate
 		return a, nil
 
 	case "e":
-		if ws := a.listView.Selected(); ws != nil {
-			a.createView.EditWorkspace(ws)
+		item := a.listView.Selected()
+		if item != nil && item.Type == "workspace" {
+			a.createView.EditWorkspace(item.Workspace)
 			a.currentView = ViewCreate
 		}
 		return a, nil
 
 	case "d":
-		if ws := a.listView.Selected(); ws != nil {
-			if err := a.store.Delete(ws.Name); err == nil {
-				a.listView.SetWorkspaces(a.store.List())
+		item := a.listView.Selected()
+		if item != nil && item.Type == "workspace" {
+			if err := a.store.Delete(item.Workspace.Name); err == nil {
+				a.listView.Refresh()
 			}
+		}
+		return a, nil
+
+	case "*", "s":
+		// Toggle quick access
+		item := a.listView.Selected()
+		if item != nil && item.Type == "workspace" {
+			a.store.ToggleQuickAccess(item.Workspace.Name)
+			a.listView.Refresh()
 		}
 		return a, nil
 
@@ -190,7 +218,7 @@ func (a *App) updateCreate(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return a, nil
 		}
 
-		a.listView.SetWorkspaces(a.store.List())
+		a.listView.Refresh()
 		a.currentView = ViewList
 		return a, nil
 

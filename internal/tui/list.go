@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -10,36 +11,131 @@ import (
 	"github.com/OleksandrBesan/tatami/internal/workspace"
 )
 
+// ListItem represents an item in the list (workspace or folder)
+type ListItem struct {
+	Type      string // "workspace", "folder", "header"
+	Name      string
+	Workspace *workspace.Workspace
+}
+
 // ListView displays the list of workspaces
 type ListView struct {
-	workspaces []workspace.Workspace
-	filtered   []workspace.Workspace
-	cursor     int
-	filter     textinput.Model
-	filtering  bool
-	width      int
-	height     int
+	store         *workspace.Store
+	items         []ListItem
+	cursor        int
+	currentFolder string // Current folder path (empty = root)
+	filter        textinput.Model
+	filtering     bool
+	width         int
+	height        int
 }
 
 // NewListView creates a new list view
-func NewListView(workspaces []workspace.Workspace) *ListView {
+func NewListView(store *workspace.Store) *ListView {
 	ti := textinput.New()
-	ti.Placeholder = "Filter workspaces..."
+	ti.Placeholder = "Filter..."
 	ti.CharLimit = 50
 
-	return &ListView{
-		workspaces: workspaces,
-		filtered:   workspaces,
-		cursor:     0,
-		filter:     ti,
-		filtering:  false,
+	lv := &ListView{
+		store:         store,
+		cursor:        0,
+		currentFolder: "",
+		filter:        ti,
+		filtering:     false,
 	}
+	lv.refreshItems()
+	return lv
 }
 
-// SetWorkspaces updates the workspace list
-func (l *ListView) SetWorkspaces(workspaces []workspace.Workspace) {
-	l.workspaces = workspaces
-	l.applyFilter()
+// refreshItems rebuilds the item list based on current folder
+func (l *ListView) refreshItems() {
+	l.items = nil
+
+	if l.filtering && l.filter.Value() != "" {
+		// Filter mode - show all matching workspaces
+		query := strings.ToLower(l.filter.Value())
+		for _, ws := range l.store.List() {
+			if strings.Contains(strings.ToLower(ws.Name), query) ||
+				strings.Contains(strings.ToLower(ws.Path), query) {
+				wsCopy := ws
+				l.items = append(l.items, ListItem{Type: "workspace", Name: ws.Name, Workspace: &wsCopy})
+			}
+		}
+		return
+	}
+
+	// Normal mode - show structure
+	if l.currentFolder == "" {
+		// Root view
+		// Quick Access section
+		quickAccess := l.store.QuickAccess()
+		if len(quickAccess) > 0 {
+			l.items = append(l.items, ListItem{Type: "header", Name: "Quick Access"})
+			for _, ws := range quickAccess {
+				wsCopy := ws
+				l.items = append(l.items, ListItem{Type: "workspace", Name: ws.Name, Workspace: &wsCopy})
+			}
+		}
+
+		// Folders section
+		subfolders := l.store.ListSubfolders("")
+		sort.Strings(subfolders)
+		if len(subfolders) > 0 {
+			l.items = append(l.items, ListItem{Type: "header", Name: "Folders"})
+			for _, f := range subfolders {
+				l.items = append(l.items, ListItem{Type: "folder", Name: f})
+			}
+		}
+
+		// Root workspaces
+		rootWs := l.store.ListRootWorkspaces()
+		if len(rootWs) > 0 {
+			l.items = append(l.items, ListItem{Type: "header", Name: "Workspaces"})
+			for _, ws := range rootWs {
+				wsCopy := ws
+				l.items = append(l.items, ListItem{Type: "workspace", Name: ws.Name, Workspace: &wsCopy})
+			}
+		}
+	} else {
+		// Inside a folder
+		// Back option
+		l.items = append(l.items, ListItem{Type: "folder", Name: ".."})
+
+		// Subfolders
+		subfolders := l.store.ListSubfolders(l.currentFolder)
+		sort.Strings(subfolders)
+		for _, f := range subfolders {
+			l.items = append(l.items, ListItem{Type: "folder", Name: f})
+		}
+
+		// Workspaces in this folder
+		wsInFolder := l.store.ListInFolder(l.currentFolder)
+		for _, ws := range wsInFolder {
+			wsCopy := ws
+			l.items = append(l.items, ListItem{Type: "workspace", Name: ws.Name, Workspace: &wsCopy})
+		}
+	}
+
+	// Adjust cursor
+	if l.cursor >= len(l.items) {
+		l.cursor = max(0, len(l.items)-1)
+	}
+	// Skip headers
+	l.skipHeaders(1)
+}
+
+func (l *ListView) skipHeaders(direction int) {
+	for l.cursor >= 0 && l.cursor < len(l.items) && l.items[l.cursor].Type == "header" {
+		l.cursor += direction
+	}
+	if l.cursor < 0 {
+		l.cursor = 0
+		l.skipHeaders(1)
+	}
+	if l.cursor >= len(l.items) {
+		l.cursor = len(l.items) - 1
+		l.skipHeaders(-1)
+	}
 }
 
 // SetSize sets the view dimensions
@@ -48,33 +144,47 @@ func (l *ListView) SetSize(width, height int) {
 	l.height = height
 }
 
-// Selected returns the currently selected workspace
-func (l *ListView) Selected() *workspace.Workspace {
-	if len(l.filtered) == 0 {
+// Selected returns the currently selected item
+func (l *ListView) Selected() *ListItem {
+	if len(l.items) == 0 || l.cursor >= len(l.items) {
 		return nil
 	}
-	return &l.filtered[l.cursor]
+	return &l.items[l.cursor]
 }
 
-func (l *ListView) applyFilter() {
-	query := l.filter.Value()
-	if query == "" {
-		l.filtered = l.workspaces
+// CurrentFolder returns the current folder path
+func (l *ListView) CurrentFolder() string {
+	return l.currentFolder
+}
+
+// EnterFolder enters a folder
+func (l *ListView) EnterFolder(name string) {
+	if name == ".." {
+		// Go up
+		if l.currentFolder == "" {
+			return
+		}
+		parts := strings.Split(l.currentFolder, "/")
+		if len(parts) <= 1 {
+			l.currentFolder = ""
+		} else {
+			l.currentFolder = strings.Join(parts[:len(parts)-1], "/")
+		}
 	} else {
-		query = strings.ToLower(query)
-		l.filtered = nil
-		for _, ws := range l.workspaces {
-			if strings.Contains(strings.ToLower(ws.Name), query) ||
-				strings.Contains(strings.ToLower(ws.Path), query) {
-				l.filtered = append(l.filtered, ws)
-			}
+		// Go into folder
+		if l.currentFolder == "" {
+			l.currentFolder = name
+		} else {
+			l.currentFolder = l.currentFolder + "/" + name
 		}
 	}
+	l.cursor = 0
+	l.refreshItems()
+}
 
-	// Adjust cursor if needed
-	if l.cursor >= len(l.filtered) {
-		l.cursor = max(0, len(l.filtered)-1)
-	}
+// Refresh reloads items from store
+func (l *ListView) Refresh() {
+	l.refreshItems()
 }
 
 // Update handles input for the list view
@@ -82,7 +192,7 @@ func (l *ListView) Update(msg tea.Msg) tea.Cmd {
 	if l.filtering {
 		var cmd tea.Cmd
 		l.filter, cmd = l.filter.Update(msg)
-		l.applyFilter()
+		l.refreshItems()
 		return cmd
 	}
 
@@ -90,21 +200,30 @@ func (l *ListView) Update(msg tea.Msg) tea.Cmd {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "j", "down":
-			if l.cursor < len(l.filtered)-1 {
+			if l.cursor < len(l.items)-1 {
 				l.cursor++
+				l.skipHeaders(1)
 			}
 		case "k", "up":
 			if l.cursor > 0 {
 				l.cursor--
+				l.skipHeaders(-1)
 			}
 		case "g":
 			l.cursor = 0
+			l.skipHeaders(1)
 		case "G":
-			l.cursor = max(0, len(l.filtered)-1)
+			l.cursor = max(0, len(l.items)-1)
+			l.skipHeaders(-1)
 		case "/":
 			l.filtering = true
 			l.filter.Focus()
 			return nil
+		case "backspace", "h":
+			// Go back if in a folder
+			if l.currentFolder != "" && !l.filtering {
+				l.EnterFolder("..")
+			}
 		}
 	}
 	return nil
@@ -114,12 +233,12 @@ func (l *ListView) Update(msg tea.Msg) tea.Cmd {
 func (l *ListView) StopFiltering() {
 	l.filtering = false
 	l.filter.Blur()
+	l.refreshItems()
 }
 
 // ClearFilter resets the filter
 func (l *ListView) ClearFilter() {
 	l.filter.SetValue("")
-	l.applyFilter()
 	l.StopFiltering()
 }
 
@@ -133,7 +252,11 @@ func (l *ListView) View() string {
 	var b strings.Builder
 
 	// Title
-	b.WriteString(titleStyle.Render("TATAMI - Workspaces"))
+	title := "TATAMI"
+	if l.currentFolder != "" {
+		title = "TATAMI - " + l.currentFolder
+	}
+	b.WriteString(titleStyle.Render(title))
 	b.WriteString("\n\n")
 
 	// Filter input (if active)
@@ -142,71 +265,91 @@ func (l *ListView) View() string {
 		b.WriteString("\n\n")
 	}
 
-	// Workspace list
-	if len(l.filtered) == 0 {
-		if len(l.workspaces) == 0 {
+	// Item list
+	if len(l.items) == 0 {
+		if l.store.List() == nil || len(l.store.List()) == 0 {
 			b.WriteString(mutedStyle.Render("No workspaces yet. Press 'n' to create one."))
-		} else {
+		} else if l.filtering {
 			b.WriteString(mutedStyle.Render("No matching workspaces."))
+		} else {
+			b.WriteString(mutedStyle.Render("Empty folder. Press 'n' to create a workspace."))
 		}
 	} else {
-		// Calculate available height for list
-		listHeight := l.height - 10 // Reserve space for title, help, etc.
+		listHeight := l.height - 10
 		if listHeight < 5 {
 			listHeight = 5
 		}
 
-		// Determine visible range
 		start := 0
-		end := len(l.filtered)
+		end := len(l.items)
 		if end > listHeight {
-			// Scroll to keep cursor visible
 			if l.cursor >= listHeight {
 				start = l.cursor - listHeight + 1
 			}
 			end = start + listHeight
-			if end > len(l.filtered) {
-				end = len(l.filtered)
+			if end > len(l.items) {
+				end = len(l.items)
 				start = end - listHeight
 			}
 		}
 
 		for i := start; i < end; i++ {
-			ws := l.filtered[i]
-			cursor := "  "
-			style := normalStyle
-			if i == l.cursor {
-				cursor = "> "
-				style = selectedStyle
+			item := l.items[i]
+
+			switch item.Type {
+			case "header":
+				// Section header
+				b.WriteString("\n")
+				b.WriteString(labelStyle.Render(item.Name))
+				b.WriteString("\n")
+
+			case "folder":
+				cursor := "  "
+				style := normalStyle
+				if i == l.cursor {
+					cursor = "> "
+					style = selectedStyle
+				}
+				icon := "📁 "
+				if item.Name == ".." {
+					icon = "⬅ "
+				}
+				b.WriteString(fmt.Sprintf("%s%s%s/\n", cursor, icon, style.Render(item.Name)))
+
+			case "workspace":
+				cursor := "  "
+				style := normalStyle
+				if i == l.cursor {
+					cursor = "> "
+					style = selectedStyle
+				}
+				ws := item.Workspace
+				name := style.Render(ws.Name)
+				path := mutedStyle.Render(shortenPath(ws.Path, 40))
+
+				star := "  "
+				if ws.QuickAccess {
+					star = "★ "
+				}
+
+				line := fmt.Sprintf("%s%s%-20s %s", cursor, star, name, path)
+				b.WriteString(line + "\n")
 			}
-
-			// Format: name + path
-			name := style.Render(ws.Name)
-			path := mutedStyle.Render(shortenPath(ws.Path, 40))
-			line := fmt.Sprintf("%s%-20s %s", cursor, name, path)
-
-			// Add layout indicator
-			if ws.Layout.Type != workspace.LayoutNone && len(ws.Layout.Panes) > 0 {
-				indicator := mutedStyle.Render(fmt.Sprintf(" [%s:%d]", ws.Layout.Type, len(ws.Layout.Panes)))
-				line += indicator
-			}
-
-			b.WriteString(line)
-			b.WriteString("\n")
 		}
 
-		// Show scroll indicator if needed
-		if len(l.filtered) > listHeight {
-			scrollInfo := fmt.Sprintf(" (%d/%d)", l.cursor+1, len(l.filtered))
+		if len(l.items) > listHeight {
+			scrollInfo := fmt.Sprintf(" (%d/%d)", l.cursor+1, len(l.items))
 			b.WriteString(mutedStyle.Render(scrollInfo))
 			b.WriteString("\n")
 		}
 	}
 
 	// Help text
-	help := "[n]ew  [e]dit  [d]elete  [/]filter  [q]uit"
+	help := "[n]ew  [e]dit  [d]elete  [*]star  [f]older  [/]filter  [q]uit"
 	if l.filtering {
 		help = "[enter]confirm  [esc]cancel"
+	} else if l.currentFolder != "" {
+		help = "[h/←]back  [n]ew  [e]dit  [d]elete  [*]star  [q]uit"
 	}
 	b.WriteString(helpStyle.Render(help))
 
@@ -218,7 +361,6 @@ func shortenPath(path string, maxLen int) string {
 		return path
 	}
 
-	// Try to replace home directory with ~
 	home, _ := strings.CutPrefix(path, "/Users/")
 	if home != path {
 		parts := strings.SplitN(home, "/", 2)
@@ -231,7 +373,6 @@ func shortenPath(path string, maxLen int) string {
 		return path
 	}
 
-	// Truncate from the beginning
 	return "..." + path[len(path)-maxLen+3:]
 }
 

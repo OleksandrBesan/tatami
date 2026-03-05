@@ -24,9 +24,11 @@ type Layout struct {
 
 // Workspace represents a terminal workspace
 type Workspace struct {
-	Name   string `json:"name"`
-	Path   string `json:"path"`
-	Layout Layout `json:"layout"`
+	Name        string `json:"name"`
+	Path        string `json:"path"`
+	Folder      string `json:"folder,omitempty"`      // Folder path like "work/clients"
+	QuickAccess bool   `json:"quick_access,omitempty"` // Show in quick access
+	Layout      Layout `json:"layout"`
 }
 
 // NewWorkspace creates a new workspace with default values

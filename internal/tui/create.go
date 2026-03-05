@@ -19,13 +19,14 @@ const (
 
 // CreateView handles workspace creation and editing
 type CreateView struct {
-	nameInput    textinput.Model
-	pathPicker   *PathPicker
-	layoutType   workspace.LayoutType
-	layoutTypes  []workspace.LayoutType
-	layoutPanes  []workspace.Pane
+	nameInput     textinput.Model
+	pathPicker    *PathPicker
+	layoutType    workspace.LayoutType
+	layoutTypes   []workspace.LayoutType
+	layoutPanes   []workspace.Pane
 	layoutMainCmd string
-	templateName string
+	templateName  string
+	folder        string
 
 	activeField createField
 	editing     bool
@@ -59,12 +60,18 @@ func (c *CreateView) Reset() {
 	c.layoutPanes = nil
 	c.layoutMainCmd = ""
 	c.templateName = ""
+	c.folder = ""
 	c.activeField = fieldName
 	c.editing = false
 	c.editingName = ""
 	c.errorMsg = ""
 	c.nameInput.Focus()
 	c.pathPicker.Blur()
+}
+
+// SetFolder sets the folder for new workspace
+func (c *CreateView) SetFolder(folder string) {
+	c.folder = folder
 }
 
 // EditWorkspace populates the form for editing
@@ -75,6 +82,7 @@ func (c *CreateView) EditWorkspace(ws *workspace.Workspace) {
 	c.layoutPanes = ws.Layout.Panes
 	c.layoutMainCmd = ws.Layout.MainCmd
 	c.templateName = ""
+	c.folder = ws.Folder
 	c.activeField = fieldName
 	c.editing = true
 	c.editingName = ws.Name
@@ -114,6 +122,7 @@ func (c *CreateView) GetWorkspace() *workspace.Workspace {
 		strings.TrimSpace(c.nameInput.Value()),
 		c.pathPicker.Value(),
 	)
+	ws.Folder = c.folder
 	ws.Layout.Type = c.layoutType
 	ws.Layout.MainCmd = c.layoutMainCmd
 	ws.Layout.Panes = c.layoutPanes
