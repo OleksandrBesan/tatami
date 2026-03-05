@@ -8,82 +8,80 @@ type Template struct {
 }
 
 // GetTemplates returns all available layout templates
-// Main pane (left/top) is always a terminal
-// Direction: "right" = new pane RIGHT, "down" = new pane BELOW
 func GetTemplates() []Template {
 	return []Template{
 		{
-			Name:        "term+nvim",
-			Description: "[term | nvim]",
+			Name:        "nvim-right",
+			Description: "term LEFT, nvim RIGHT",
 			Panes: []Pane{
 				{Command: "nvim", Direction: "right"},
 			},
 		},
 		{
-			Name:        "term+lazygit",
-			Description: "[term | lazygit]",
-			Panes: []Pane{
-				{Command: "lazygit", Direction: "right"},
-			},
-		},
-		{
-			Name:        "term/nvim",
-			Description: "[term / nvim]",
+			Name:        "nvim-bottom",
+			Description: "term TOP, nvim BOTTOM",
 			Panes: []Pane{
 				{Command: "nvim", Direction: "down"},
 			},
 		},
 		{
-			Name:        "term+nvim/term",
-			Description: "[term | nvim / term]",
+			Name:        "lazygit-right",
+			Description: "term LEFT, lazygit RIGHT",
+			Panes: []Pane{
+				{Command: "lazygit", Direction: "right"},
+			},
+		},
+		{
+			Name:        "nvim-right-term-below",
+			Description: "term LEFT, nvim RIGHT TOP, term RIGHT BOTTOM",
 			Panes: []Pane{
 				{Command: "nvim", Direction: "right"},
 				{Command: "", Direction: "down"},
 			},
 		},
 		{
-			Name:        "term+term/term",
-			Description: "[term | term / term]",
-			Panes: []Pane{
-				{Command: "", Direction: "right"},
-				{Command: "", Direction: "down"},
-			},
-		},
-		{
-			Name:        "term+nvim/lazygit",
-			Description: "[term | nvim / lazygit]",
+			Name:        "dev-stack",
+			Description: "term LEFT, nvim RIGHT TOP, lazygit RIGHT BOTTOM",
 			Panes: []Pane{
 				{Command: "nvim", Direction: "right"},
 				{Command: "lazygit", Direction: "down"},
 			},
 		},
 		{
-			Name:        "2h",
-			Description: "[term | term]",
+			Name:        "2-side",
+			Description: "term LEFT, term RIGHT",
 			Panes: []Pane{
 				{Command: "", Direction: "right"},
 			},
 		},
 		{
-			Name:        "2v",
-			Description: "[term / term]",
+			Name:        "2-stack",
+			Description: "term TOP, term BOTTOM",
 			Panes: []Pane{
 				{Command: "", Direction: "down"},
 			},
 		},
 		{
-			Name:        "3h",
-			Description: "[term | term | term]",
+			Name:        "3-side",
+			Description: "term LEFT, term CENTER, term RIGHT",
 			Panes: []Pane{
 				{Command: "", Direction: "right"},
 				{Command: "", Direction: "right"},
 			},
 		},
 		{
-			Name:        "3v",
-			Description: "[term / term / term]",
+			Name:        "3-stack",
+			Description: "term TOP, term MIDDLE, term BOTTOM",
 			Panes: []Pane{
 				{Command: "", Direction: "down"},
+				{Command: "", Direction: "down"},
+			},
+		},
+		{
+			Name:        "3-right-stack",
+			Description: "term LEFT, term RIGHT TOP, term RIGHT BOTTOM",
+			Panes: []Pane{
+				{Command: "", Direction: "right"},
 				{Command: "", Direction: "down"},
 			},
 		},
