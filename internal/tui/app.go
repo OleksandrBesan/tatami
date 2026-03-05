@@ -16,12 +16,14 @@ const (
 	ViewCreate
 	ViewActions
 	ViewLayout
+	ViewTemplates
 )
 
 // Result represents the outcome of the TUI session
 type Result struct {
 	Action    Action
 	Workspace *workspace.Workspace
+	Template  *workspace.Template
 }
 
 // App is the main Bubbletea model
@@ -34,6 +36,7 @@ type App struct {
 	createView   *CreateView
 	actionsView  *ActionView
 	layoutEditor *LayoutEditor
+	templateView *TemplateView
 	result       *Result
 	width        int
 	height       int
@@ -91,6 +94,8 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a.updateActions(msg)
 		case ViewLayout:
 			return a.updateLayout(msg)
+		case ViewTemplates:
+			return a.updateTemplates(msg)
 		}
 	}
 
@@ -210,6 +215,13 @@ func (a *App) updateActions(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		action := a.actionsView.Selected()
 		ws := a.actionsView.Workspace()
 
+		// If template action, show template picker
+		if action == ActionWithTemplate {
+			a.templateView = NewTemplateView()
+			a.currentView = ViewTemplates
+			return a, nil
+		}
+
 		a.result = &Result{
 			Action:    action,
 			Workspace: ws,
@@ -241,6 +253,28 @@ func (a *App) updateLayout(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 }
 
+func (a *App) updateTemplates(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc", "q":
+		a.currentView = ViewActions
+		return a, nil
+
+	case "enter":
+		tmpl := a.templateView.Selected()
+		ws := a.actionsView.Workspace()
+
+		a.result = &Result{
+			Action:    ActionWithTemplate,
+			Workspace: ws,
+			Template:  tmpl,
+		}
+		return a, tea.Quit
+
+	default:
+		return a, a.templateView.Update(msg)
+	}
+}
+
 // View implements tea.Model
 func (a *App) View() string {
 	if a.err != nil {
@@ -256,6 +290,8 @@ func (a *App) View() string {
 		return a.actionsView.View()
 	case ViewLayout:
 		return boxStyle.Render(a.layoutEditor.View())
+	case ViewTemplates:
+		return a.templateView.View()
 	default:
 		return ""
 	}

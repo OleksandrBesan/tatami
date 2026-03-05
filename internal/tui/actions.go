@@ -15,6 +15,7 @@ const (
 	ActionNewTab
 	ActionNewPane
 	ActionWithLayout
+	ActionWithTemplate
 )
 
 // ActionView displays the action menu
@@ -31,12 +32,12 @@ func NewActionView(ws *workspace.Workspace, inZellij, inTmux bool) *ActionView {
 	actions := []Action{ActionCD}
 
 	if inZellij {
-		actions = append(actions, ActionNewTab, ActionNewPane)
+		actions = append(actions, ActionNewTab, ActionNewPane, ActionWithTemplate)
 		if ws.Layout.Type == workspace.LayoutZellij && len(ws.Layout.Panes) > 0 {
 			actions = append(actions, ActionWithLayout)
 		}
 	} else if inTmux {
-		actions = append(actions, ActionNewTab, ActionNewPane)
+		actions = append(actions, ActionNewTab, ActionNewPane, ActionWithTemplate)
 		if ws.Layout.Type == workspace.LayoutTmux && len(ws.Layout.Panes) > 0 {
 			actions = append(actions, ActionWithLayout)
 		}
@@ -101,10 +102,11 @@ func (a *ActionView) View() string {
 	b.WriteString("\n\n")
 
 	actionLabels := map[Action]string{
-		ActionCD:         "cd here",
-		ActionNewTab:     "new tab",
-		ActionNewPane:    "new pane",
-		ActionWithLayout: "with layout",
+		ActionCD:           "cd here",
+		ActionNewTab:       "new tab",
+		ActionNewPane:      "new pane",
+		ActionWithTemplate: "with template",
+		ActionWithLayout:   "with saved layout",
 	}
 
 	for i, action := range a.actions {

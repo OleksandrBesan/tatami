@@ -123,6 +123,29 @@ func handleResult(result *tui.Result) error {
 		}
 		fmt.Fprintf(os.Stderr, "Layout type mismatch or not inside session\n")
 		return nil
+
+	case tui.ActionWithTemplate:
+		if result.Template == nil {
+			return fmt.Errorf("no template selected")
+		}
+		// Create a temporary workspace with template panes
+		tmplWs := &workspace.Workspace{
+			Name: ws.Name,
+			Path: ws.Path,
+			Layout: workspace.Layout{
+				Panes: result.Template.Panes,
+			},
+		}
+		if zellij.IsInsideSession() {
+			tmplWs.Layout.Type = workspace.LayoutZellij
+			return zellij.RunWithLayout(tmplWs)
+		}
+		if tmux.IsInsideSession() {
+			tmplWs.Layout.Type = workspace.LayoutTmux
+			return tmux.RunWithLayout(tmplWs)
+		}
+		fmt.Fprintf(os.Stderr, "Not inside a Zellij or Tmux session\n")
+		return nil
 	}
 
 	return nil
