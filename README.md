@@ -2,8 +2,6 @@
 
 Terminal workspace manager with Zellij/Tmux integration. Quickly switch between projects with predefined layouts.
 
-![Demo](https://via.placeholder.com/800x400?text=Tatami+Demo)
-
 ## Installation
 
 ### Homebrew (macOS/Linux)
