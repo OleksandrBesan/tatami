@@ -32,6 +32,7 @@ type App struct {
 	zellij       *shell.ZellijRunner
 	tmux         *shell.TmuxRunner
 	currentView  View
+	previousView View
 	listView     *ListView
 	createView   *CreateView
 	actionsView  *ActionView
@@ -200,6 +201,13 @@ func (a *App) updateCreate(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		a.currentView = ViewLayout
 		return a, nil
 
+	case "ctrl+t":
+		// Open template picker
+		a.templateView = NewTemplateView()
+		a.previousView = ViewCreate
+		a.currentView = ViewTemplates
+		return a, nil
+
 	default:
 		return a, a.createView.Update(msg)
 	}
@@ -218,6 +226,7 @@ func (a *App) updateActions(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// If template action, show template picker
 		if action == ActionWithTemplate {
 			a.templateView = NewTemplateView()
+			a.previousView = ViewActions
 			a.currentView = ViewTemplates
 			return a, nil
 		}
@@ -256,13 +265,21 @@ func (a *App) updateLayout(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (a *App) updateTemplates(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "esc", "q":
-		a.currentView = ViewActions
+		a.currentView = a.previousView
 		return a, nil
 
 	case "enter":
 		tmpl := a.templateView.Selected()
-		ws := a.actionsView.Workspace()
 
+		// If came from create view, apply template and go back
+		if a.previousView == ViewCreate {
+			a.createView.ApplyTemplate(tmpl)
+			a.currentView = ViewCreate
+			return a, nil
+		}
+
+		// If came from actions view, execute with template
+		ws := a.actionsView.Workspace()
 		a.result = &Result{
 			Action:    ActionWithTemplate,
 			Workspace: ws,

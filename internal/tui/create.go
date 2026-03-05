@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -18,10 +19,12 @@ const (
 
 // CreateView handles workspace creation and editing
 type CreateView struct {
-	nameInput   textinput.Model
-	pathPicker  *PathPicker
-	layoutType  workspace.LayoutType
-	layoutTypes []workspace.LayoutType
+	nameInput    textinput.Model
+	pathPicker   *PathPicker
+	layoutType   workspace.LayoutType
+	layoutTypes  []workspace.LayoutType
+	layoutPanes  []workspace.Pane
+	templateName string
 
 	activeField createField
 	editing     bool
@@ -52,6 +55,8 @@ func (c *CreateView) Reset() {
 	c.nameInput.SetValue("")
 	c.pathPicker.SetValue("")
 	c.layoutType = workspace.LayoutNone
+	c.layoutPanes = nil
+	c.templateName = ""
 	c.activeField = fieldName
 	c.editing = false
 	c.editingName = ""
@@ -65,12 +70,23 @@ func (c *CreateView) EditWorkspace(ws *workspace.Workspace) {
 	c.nameInput.SetValue(ws.Name)
 	c.pathPicker.SetValue(ws.Path)
 	c.layoutType = ws.Layout.Type
+	c.layoutPanes = ws.Layout.Panes
+	c.templateName = ""
 	c.activeField = fieldName
 	c.editing = true
 	c.editingName = ws.Name
 	c.errorMsg = ""
 	c.nameInput.Focus()
 	c.pathPicker.Blur()
+}
+
+// ApplyTemplate applies a template to the current workspace
+func (c *CreateView) ApplyTemplate(tmpl *workspace.Template) {
+	c.layoutPanes = tmpl.Panes
+	c.templateName = tmpl.Name
+	if c.layoutType == workspace.LayoutNone {
+		c.layoutType = workspace.LayoutZellij
+	}
 }
 
 // IsEditing returns whether we're editing an existing workspace
@@ -95,6 +111,7 @@ func (c *CreateView) GetWorkspace() *workspace.Workspace {
 		c.pathPicker.Value(),
 	)
 	ws.Layout.Type = c.layoutType
+	ws.Layout.Panes = c.layoutPanes
 	return ws
 }
 
@@ -253,6 +270,19 @@ func (c *CreateView) View() string {
 	}
 	b.WriteString("\n")
 
+	// Show template/panes info
+	if c.templateName != "" {
+		b.WriteString("  ")
+		b.WriteString(mutedStyle.Render("Template: "))
+		b.WriteString(selectedStyle.Render(c.templateName))
+		b.WriteString("\n")
+	} else if len(c.layoutPanes) > 0 {
+		b.WriteString("  ")
+		b.WriteString(mutedStyle.Render("Panes: "))
+		b.WriteString(selectedStyle.Render(fmt.Sprintf("%d configured", len(c.layoutPanes))))
+		b.WriteString("\n")
+	}
+
 	// Error message
 	if c.errorMsg != "" {
 		b.WriteString("\n")
@@ -261,11 +291,11 @@ func (c *CreateView) View() string {
 	}
 
 	// Help text
-	help := "[tab]next  [ctrl+j/k]navigate  [enter]save  [esc]cancel"
+	help := "[tab]next  [ctrl+t]template  [enter]save  [esc]cancel"
 	if c.activeField == fieldPath {
-		help = "[tab]autocomplete  [ctrl+j/k]navigate  [enter]save  [esc]cancel"
+		help = "[tab]autocomplete  [ctrl+t]template  [enter]save  [esc]cancel"
 	} else if c.activeField == fieldLayoutType {
-		help = "[←/→]change  [ctrl+j/k]navigate  [enter]save  [esc]cancel"
+		help = "[←/→]change  [ctrl+t]template  [enter]save  [esc]cancel"
 	}
 	b.WriteString(helpStyle.Render(help))
 
