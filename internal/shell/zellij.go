@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/oleslab/tatami/internal/workspace"
+	"github.com/OleksandrBesan/tatami/internal/workspace"
 )
 
 // ZellijRunner executes Zellij commands

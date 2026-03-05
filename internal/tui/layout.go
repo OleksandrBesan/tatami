@@ -6,7 +6,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/oleslab/tatami/internal/workspace"
+	"github.com/OleksandrBesan/tatami/internal/workspace"
 )
 
 type layoutField int

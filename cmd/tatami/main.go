@@ -7,10 +7,10 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/oleslab/tatami/internal/config"
-	"github.com/oleslab/tatami/internal/shell"
-	"github.com/oleslab/tatami/internal/tui"
-	"github.com/oleslab/tatami/internal/workspace"
+	"github.com/OleksandrBesan/tatami/internal/config"
+	"github.com/OleksandrBesan/tatami/internal/shell"
+	"github.com/OleksandrBesan/tatami/internal/tui"
+	"github.com/OleksandrBesan/tatami/internal/workspace"
 )
 
 var version = "dev"

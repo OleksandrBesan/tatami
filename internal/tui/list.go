@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/oleslab/tatami/internal/workspace"
+	"github.com/OleksandrBesan/tatami/internal/workspace"
 )
 
 // ListView displays the list of workspaces

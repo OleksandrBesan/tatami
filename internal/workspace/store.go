@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/oleslab/tatami/internal/config"
+	"github.com/OleksandrBesan/tatami/internal/config"
 )
 
 var (

@@ -1,4 +1,4 @@
-module github.com/oleslab/tatami
+module github.com/OleksandrBesan/tatami
 
 go 1.25.1
 

@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/oleslab/tatami/internal/shell"
-	"github.com/oleslab/tatami/internal/workspace"
+	"github.com/OleksandrBesan/tatami/internal/shell"
+	"github.com/OleksandrBesan/tatami/internal/workspace"
 )
 
 // View represents the current view state

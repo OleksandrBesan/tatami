@@ -1,25 +1,25 @@
 class Tatami < Formula
   desc "Terminal workspace manager with Zellij/Tmux integration"
-  homepage "https://github.com/oleslab/tatami"
+  homepage "https://github.com/OleksandrBesan/tatami"
   version "0.1.0"
   license "MIT"
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://github.com/oleslab/tatami/releases/download/v#{version}/tatami_#{version}_darwin_arm64.tar.gz"
+      url "https://github.com/OleksandrBesan/tatami/releases/download/v#{version}/tatami_#{version}_darwin_arm64.tar.gz"
       # sha256 "PLACEHOLDER" # Update after release
     else
-      url "https://github.com/oleslab/tatami/releases/download/v#{version}/tatami_#{version}_darwin_amd64.tar.gz"
+      url "https://github.com/OleksandrBesan/tatami/releases/download/v#{version}/tatami_#{version}_darwin_amd64.tar.gz"
       # sha256 "PLACEHOLDER" # Update after release
     end
   end
 
   on_linux do
     if Hardware::CPU.arm?
-      url "https://github.com/oleslab/tatami/releases/download/v#{version}/tatami_#{version}_linux_arm64.tar.gz"
+      url "https://github.com/OleksandrBesan/tatami/releases/download/v#{version}/tatami_#{version}_linux_arm64.tar.gz"
       # sha256 "PLACEHOLDER" # Update after release
     else
-      url "https://github.com/oleslab/tatami/releases/download/v#{version}/tatami_#{version}_linux_amd64.tar.gz"
+      url "https://github.com/OleksandrBesan/tatami/releases/download/v#{version}/tatami_#{version}_linux_amd64.tar.gz"
       # sha256 "PLACEHOLDER" # Update after release
     end
   end

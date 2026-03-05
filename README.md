@@ -9,27 +9,27 @@ Terminal workspace manager with Zellij/Tmux integration. Quickly switch between 
 ### Homebrew (macOS/Linux)
 
 ```bash
-brew tap oleslab/tap
+brew tap OleksandrBesan/tap
 brew install tatami
 ```
 
 ### Go Install
 
 ```bash
-go install github.com/oleslab/tatami/cmd/tatami@latest
+go install github.com/OleksandrBesan/tatami/cmd/tatami@latest
 ```
 
 ### Build from Source
 
 ```bash
-git clone https://github.com/oleslab/tatami.git
+git clone https://github.com/OleksandrBesan/tatami.git
 cd tatami
 make install
 ```
 
 ### Download Binary
 
-Download from [Releases](https://github.com/oleslab/tatami/releases).
+Download from [Releases](https://github.com/OleksandrBesan/tatami/releases).
 
 ## Shell Integration
 
