@@ -1,76 +1,124 @@
 # Tatami
 
-Terminal workspace manager with Zellij/Tmux integration.
+Terminal workspace manager with Zellij/Tmux integration. Quickly switch between projects with predefined layouts.
+
+![Demo](https://via.placeholder.com/800x400?text=Tatami+Demo)
 
 ## Installation
+
+### Homebrew (macOS/Linux)
+
+```bash
+brew tap oleslab/tap
+brew install tatami
+```
+
+### Go Install
 
 ```bash
 go install github.com/oleslab/tatami/cmd/tatami@latest
 ```
 
-Or build from source:
+### Build from Source
 
 ```bash
-go build -o tatami ./cmd/tatami
+git clone https://github.com/oleslab/tatami.git
+cd tatami
+make install
 ```
+
+### Download Binary
+
+Download from [Releases](https://github.com/oleslab/tatami/releases).
 
 ## Shell Integration
 
-For `cd` functionality to work, add the shell wrapper to your shell config:
+For `cd` to work in the current terminal, add to `~/.zshrc` or `~/.bashrc`:
 
 ```bash
-# Add to ~/.zshrc or ~/.bashrc
-source /path/to/tatami/scripts/tatami.sh
+tatami() {
+  local output
+  output=$(TATAMI_WRAPPER=1 command tatami "$@")
+  local exit_code=$?
+  if [[ $exit_code -eq 0 && -d "$output" ]]; then
+    cd "$output"
+  elif [[ -n "$output" ]]; then
+    echo "$output"
+  fi
+  return $exit_code
+}
 ```
 
-This allows the `tatami` command to change your shell's working directory when you select "cd here".
+Without the wrapper, `cd` will type the command in Zellij or copy to clipboard.
 
 ## Usage
 
-Run `tatami` to open the workspace manager.
+```bash
+tatami
+```
 
 ### Keyboard Shortcuts
 
 #### List View
-- `j/k` or `↓/↑` - Navigate workspaces
-- `Enter` - Open action menu
-- `n` - Create new workspace
-- `e` - Edit selected workspace
-- `d` - Delete selected workspace
-- `/` - Filter workspaces
-- `q` or `Esc` - Quit
+| Key | Action |
+|-----|--------|
+| `j` / `↓` | Move down |
+| `k` / `↑` | Move up |
+| `Enter` | Open action menu |
+| `n` | New workspace |
+| `e` | Edit workspace |
+| `d` | Delete workspace |
+| `/` | Filter workspaces |
+| `q` / `Esc` | Quit |
 
 #### Create/Edit View
-- `Tab` - Next field
-- `Shift+Tab` - Previous field
-- `Enter` - Save workspace
-- `Esc` - Cancel
-- `Ctrl+L` - Open layout editor
-
-#### Path Picker
-- `Tab` - Autocomplete / cycle suggestions
-- `Shift+Tab` - Previous suggestion
-- `Ctrl+U` - Clear input
+| Key | Action |
+|-----|--------|
+| `Tab` | Autocomplete path / Next field |
+| `Ctrl+J` | Next field |
+| `Ctrl+K` | Previous field |
+| `Ctrl+T` | Choose template |
+| `←` / `→` | Change layout type |
+| `Enter` | Save |
+| `Esc` | Cancel |
 
 #### Action Menu
-- `j/k` or `↓/↑` - Navigate actions
-- `Enter` - Execute action
-- `Esc` - Back to list
+| Key | Action |
+|-----|--------|
+| `j` / `k` | Navigate |
+| `Enter` | Execute |
+| `Esc` | Back |
 
 ### Actions
 
-- **cd here** - Change directory (requires shell wrapper)
-- **new tab** - Open workspace in a new Zellij tab or Tmux window
-- **new pane** - Open workspace in a new pane
-- **with layout** - Open workspace with configured pane layout
+| Action | Description |
+|--------|-------------|
+| **cd here** | Change to workspace directory |
+| **new tab** | Open in new Zellij tab / Tmux window |
+| **new pane** | Open in new pane |
+| **with template** | Open with a layout template |
+| **with saved layout** | Open with workspace's saved layout |
+
+## Layout Templates
+
+Select a template when creating a workspace (`Ctrl+T`) or when opening (`with template`).
+
+| Template | Layout |
+|----------|--------|
+| `nvim-left` | nvim LEFT, term RIGHT |
+| `nvim-left-2term` | nvim LEFT, term RIGHT TOP, term RIGHT BOTTOM |
+| `nvim-left-lazygit` | nvim LEFT, lazygit RIGHT |
+| `nvim-top` | nvim TOP, term BOTTOM |
+| `term-left-nvim` | term LEFT, nvim RIGHT |
+| `term-left-lazygit` | term LEFT, lazygit RIGHT |
+| `term-left-nvim-lazygit` | term LEFT, nvim RIGHT TOP, lazygit RIGHT BOTTOM |
+| `2-side` | term LEFT, term RIGHT |
+| `2-stack` | term TOP, term BOTTOM |
+| `3-right-stack` | term LEFT, term RIGHT TOP, term RIGHT BOTTOM |
 
 ## Configuration
 
-Workspaces are stored in `~/.config/tatami/workspaces.json`.
-
-### Layout Configuration
-
-Each workspace can have a layout with multiple panes:
+Workspaces are stored in `~/.config/tatami/workspaces.json`:
 
 ```json
 {
@@ -80,9 +128,10 @@ Each workspace can have a layout with multiple panes:
       "path": "/home/user/projects/myproject",
       "layout": {
         "type": "zellij",
+        "main_cmd": "nvim",
         "panes": [
-          { "command": "nvim", "direction": "down" },
-          { "command": "lazygit", "direction": "right" }
+          { "command": "", "direction": "right" },
+          { "command": "", "direction": "down" }
         ]
       }
     }
@@ -90,11 +139,21 @@ Each workspace can have a layout with multiple panes:
 }
 ```
 
-Layout types:
-- `none` - No layout (default)
-- `zellij` - Use Zellij for pane management
-- `tmux` - Use Tmux for pane management
+### Layout Fields
 
-Pane directions:
-- `down` - Split horizontally (new pane below)
-- `right` - Split vertically (new pane to the right)
+| Field | Description |
+|-------|-------------|
+| `type` | `none`, `zellij`, or `tmux` |
+| `main_cmd` | Command to run in the original (left/top) pane |
+| `panes` | Array of additional panes |
+| `panes[].command` | Command to run (empty = shell) |
+| `panes[].direction` | `right` or `down` |
+
+## Requirements
+
+- **Zellij** or **Tmux** (for tab/pane features)
+- Works without them for basic `cd` functionality
+
+## License
+
+MIT
