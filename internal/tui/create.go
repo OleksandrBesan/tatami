@@ -131,7 +131,7 @@ func (c *CreateView) GetWorkspace() *workspace.Workspace {
 		strings.TrimSpace(c.nameInput.Value()),
 		c.pathPicker.Value(),
 	)
-	ws.Folder = strings.TrimSpace(c.folderInput.Value())
+	ws.Folder = strings.Trim(strings.TrimSpace(c.folderInput.Value()), "/")
 	ws.Layout.Type = c.layoutType
 	ws.Layout.MainCmd = c.layoutMainCmd
 	ws.Layout.Panes = c.layoutPanes

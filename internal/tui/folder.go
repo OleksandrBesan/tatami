@@ -29,7 +29,7 @@ func NewFolderInput(parentPath string) *FolderInput {
 
 // Value returns the full folder path
 func (f *FolderInput) Value() string {
-	name := strings.TrimSpace(f.input.Value())
+	name := strings.Trim(strings.TrimSpace(f.input.Value()), "/")
 	if name == "" {
 		return ""
 	}
