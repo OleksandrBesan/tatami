@@ -28,6 +28,7 @@ type CreateView struct {
 	layoutPanes   []workspace.Pane
 	layoutMainCmd string
 	templateName  string
+	quickAccess   bool
 
 	activeField createField
 	editing     bool
@@ -68,6 +69,7 @@ func (c *CreateView) Reset() {
 	c.layoutPanes = nil
 	c.layoutMainCmd = ""
 	c.templateName = ""
+	c.quickAccess = false
 	c.activeField = fieldName
 	c.editing = false
 	c.editingName = ""
@@ -90,6 +92,7 @@ func (c *CreateView) EditWorkspace(ws *workspace.Workspace) {
 	c.layoutType = ws.Layout.Type
 	c.layoutPanes = ws.Layout.Panes
 	c.layoutMainCmd = ws.Layout.MainCmd
+	c.quickAccess = ws.QuickAccess
 	c.templateName = ""
 	c.activeField = fieldName
 	c.editing = true
@@ -132,6 +135,7 @@ func (c *CreateView) GetWorkspace() *workspace.Workspace {
 		c.pathPicker.Value(),
 	)
 	ws.Folder = strings.Trim(strings.TrimSpace(c.folderInput.Value()), "/")
+	ws.QuickAccess = c.quickAccess
 	ws.Layout.Type = c.layoutType
 	ws.Layout.MainCmd = c.layoutMainCmd
 	ws.Layout.Panes = c.layoutPanes
