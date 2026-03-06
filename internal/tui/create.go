@@ -14,6 +14,7 @@ type createField int
 const (
 	fieldName createField = iota
 	fieldPath
+	fieldFolder
 	fieldLayoutType
 )
 
@@ -21,12 +22,12 @@ const (
 type CreateView struct {
 	nameInput     textinput.Model
 	pathPicker    *PathPicker
+	folderInput   textinput.Model
 	layoutType    workspace.LayoutType
 	layoutTypes   []workspace.LayoutType
 	layoutPanes   []workspace.Pane
 	layoutMainCmd string
 	templateName  string
-	folder        string
 
 	activeField createField
 	editing     bool
@@ -42,9 +43,15 @@ func NewCreateView() *CreateView {
 	nameInput.Width = 30
 	nameInput.Focus()
 
+	folderInput := textinput.New()
+	folderInput.Placeholder = "folder/path (optional)"
+	folderInput.CharLimit = 100
+	folderInput.Width = 30
+
 	return &CreateView{
 		nameInput:   nameInput,
 		pathPicker:  NewPathPicker(),
+		folderInput: folderInput,
 		layoutType:  workspace.LayoutNone,
 		layoutTypes: []workspace.LayoutType{workspace.LayoutNone, workspace.LayoutZellij, workspace.LayoutTmux},
 		activeField: fieldName,
@@ -56,39 +63,41 @@ func NewCreateView() *CreateView {
 func (c *CreateView) Reset() {
 	c.nameInput.SetValue("")
 	c.pathPicker.SetValue("")
+	c.folderInput.SetValue("")
 	c.layoutType = workspace.LayoutNone
 	c.layoutPanes = nil
 	c.layoutMainCmd = ""
 	c.templateName = ""
-	c.folder = ""
 	c.activeField = fieldName
 	c.editing = false
 	c.editingName = ""
 	c.errorMsg = ""
 	c.nameInput.Focus()
 	c.pathPicker.Blur()
+	c.folderInput.Blur()
 }
 
 // SetFolder sets the folder for new workspace
 func (c *CreateView) SetFolder(folder string) {
-	c.folder = folder
+	c.folderInput.SetValue(folder)
 }
 
 // EditWorkspace populates the form for editing
 func (c *CreateView) EditWorkspace(ws *workspace.Workspace) {
 	c.nameInput.SetValue(ws.Name)
 	c.pathPicker.SetValue(ws.Path)
+	c.folderInput.SetValue(ws.Folder)
 	c.layoutType = ws.Layout.Type
 	c.layoutPanes = ws.Layout.Panes
 	c.layoutMainCmd = ws.Layout.MainCmd
 	c.templateName = ""
-	c.folder = ws.Folder
 	c.activeField = fieldName
 	c.editing = true
 	c.editingName = ws.Name
 	c.errorMsg = ""
 	c.nameInput.Focus()
 	c.pathPicker.Blur()
+	c.folderInput.Blur()
 }
 
 // ApplyTemplate applies a template to the current workspace
@@ -122,7 +131,7 @@ func (c *CreateView) GetWorkspace() *workspace.Workspace {
 		strings.TrimSpace(c.nameInput.Value()),
 		c.pathPicker.Value(),
 	)
-	ws.Folder = c.folder
+	ws.Folder = strings.TrimSpace(c.folderInput.Value())
 	ws.Layout.Type = c.layoutType
 	ws.Layout.MainCmd = c.layoutMainCmd
 	ws.Layout.Panes = c.layoutPanes
@@ -183,30 +192,35 @@ func (c *CreateView) Update(msg tea.Msg) tea.Cmd {
 		c.nameInput, cmd = c.nameInput.Update(msg)
 	case fieldPath:
 		cmd = c.pathPicker.Update(msg)
+	case fieldFolder:
+		c.folderInput, cmd = c.folderInput.Update(msg)
 	}
 
 	return cmd
 }
 
 func (c *CreateView) nextField() {
-	c.activeField = (c.activeField + 1) % 3
+	c.activeField = (c.activeField + 1) % 4
 	c.updateFocus()
 }
 
 func (c *CreateView) prevField() {
-	c.activeField = (c.activeField + 2) % 3
+	c.activeField = (c.activeField + 3) % 4
 	c.updateFocus()
 }
 
 func (c *CreateView) updateFocus() {
 	c.nameInput.Blur()
 	c.pathPicker.Blur()
+	c.folderInput.Blur()
 
 	switch c.activeField {
 	case fieldName:
 		c.nameInput.Focus()
 	case fieldPath:
 		c.pathPicker.Focus()
+	case fieldFolder:
+		c.folderInput.Focus()
 	}
 }
 
@@ -260,6 +274,19 @@ func (c *CreateView) View() string {
 	b.WriteString(c.pathPicker.View())
 	b.WriteString("\n\n")
 
+	// Folder field
+	folderLabel := "Folder"
+	if c.activeField == fieldFolder {
+		folderLabel = "> " + folderLabel
+	} else {
+		folderLabel = "  " + folderLabel
+	}
+	b.WriteString(labelStyle.Render(folderLabel))
+	b.WriteString("\n")
+	b.WriteString("  ")
+	b.WriteString(c.folderInput.View())
+	b.WriteString("\n\n")
+
 	// Layout type
 	layoutLabel := "Layout"
 	if c.activeField == fieldLayoutType {
@@ -305,9 +332,9 @@ func (c *CreateView) View() string {
 	}
 
 	// Help text
-	help := "[tab]next  [ctrl+p]template  [enter]save  [esc]cancel"
+	help := "[ctrl+j/k]nav  [ctrl+p]template  [enter]save  [esc]cancel"
 	if c.activeField == fieldPath {
-		help = "[tab]autocomplete  [ctrl+p]template  [enter]save  [esc]cancel"
+		help = "[tab]autocomplete  [ctrl+j/k]nav  [enter]save  [esc]cancel"
 	} else if c.activeField == fieldLayoutType {
 		help = "[←/→]change  [ctrl+p]template  [enter]save  [esc]cancel"
 	}
