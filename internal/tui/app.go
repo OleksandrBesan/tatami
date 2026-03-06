@@ -263,7 +263,7 @@ func (a *App) updateCreate(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		a.currentView = ViewLayout
 		return a, nil
 
-	case "ctrl+p":
+	case "alt+t":
 		// Open template picker
 		a.templateView = NewTemplateView()
 		a.previousView = ViewCreate

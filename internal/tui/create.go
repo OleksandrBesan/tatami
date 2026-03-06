@@ -162,7 +162,7 @@ func (c *CreateView) Update(msg tea.Msg) tea.Cmd {
 		case "ctrl+j", "ctrl+n":
 			c.nextField()
 			return nil
-		case "ctrl+k", "ctrl+p":
+		case "ctrl+k":
 			c.prevField()
 			return nil
 		case "left", "right":
@@ -332,11 +332,11 @@ func (c *CreateView) View() string {
 	}
 
 	// Help text
-	help := "[ctrl+j/k]nav  [ctrl+p]template  [enter]save  [esc]cancel"
+	help := "[ctrl+j/k]nav  [alt+t]template  [enter]save  [esc]cancel"
 	if c.activeField == fieldPath {
 		help = "[tab]autocomplete  [ctrl+j/k]nav  [enter]save  [esc]cancel"
 	} else if c.activeField == fieldLayoutType {
-		help = "[←/→]change  [ctrl+p]template  [enter]save  [esc]cancel"
+		help = "[←/→]change  [alt+t]template  [enter]save  [esc]cancel"
 	}
 	b.WriteString(helpStyle.Render(help))
 
