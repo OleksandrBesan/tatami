@@ -29,18 +29,23 @@ type ActionView struct {
 
 // NewActionView creates a new action view
 func NewActionView(ws *workspace.Workspace, inZellij, inTmux bool) *ActionView {
-	actions := []Action{ActionCD}
+	var actions []Action
 
 	if inZellij {
-		actions = append(actions, ActionNewTab, ActionNewPane, ActionWithTemplate)
+		// Saved layout first (if available)
 		if ws.Layout.Type == workspace.LayoutZellij && len(ws.Layout.Panes) > 0 {
 			actions = append(actions, ActionWithLayout)
 		}
+		actions = append(actions, ActionWithTemplate, ActionNewPane, ActionNewTab, ActionCD)
 	} else if inTmux {
-		actions = append(actions, ActionNewTab, ActionNewPane, ActionWithTemplate)
+		// Saved layout first (if available)
 		if ws.Layout.Type == workspace.LayoutTmux && len(ws.Layout.Panes) > 0 {
 			actions = append(actions, ActionWithLayout)
 		}
+		actions = append(actions, ActionWithTemplate, ActionNewPane, ActionNewTab, ActionCD)
+	} else {
+		// Outside multiplexer - only CD
+		actions = []Action{ActionCD}
 	}
 
 	return &ActionView{
