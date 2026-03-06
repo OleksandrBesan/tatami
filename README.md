@@ -55,51 +55,68 @@ Without the wrapper, `cd` will type the command in Zellij or copy to clipboard.
 tatami
 ```
 
-### Keyboard Shortcuts
+## Features
 
-#### List View
+### Folders
+Organize workspaces into folders. Navigate into folders with `Enter` or `l`, go back with `h`, `Esc`, or select `../`.
+
+### Quick Access
+Star workspaces with `*` or `s` to pin them to the "Quick Access" section at the root level for fast access.
+
+### Layout Templates
+Apply predefined pane layouts when opening workspaces.
+
+## Keyboard Shortcuts
+
+### List View
 | Key | Action |
 |-----|--------|
 | `j` / `↓` | Move down |
 | `k` / `↑` | Move up |
-| `Enter` | Open action menu |
+| `Enter` / `l` | Open action menu / Enter folder |
+| `h` / `Esc` | Go back (in folder) / Quit (at root) |
 | `n` | New workspace |
 | `e` | Edit workspace |
 | `d` | Delete workspace |
+| `*` / `s` | Toggle quick access (star) |
+| `f` | Create folder |
 | `/` | Filter workspaces |
-| `q` / `Esc` | Quit |
+| `q` | Quit |
 
-#### Create/Edit View
+### Create/Edit View
 | Key | Action |
 |-----|--------|
-| `Tab` | Autocomplete path / Next field |
-| `Ctrl+J` | Next field |
+| `Tab` | Autocomplete path (on path field) |
+| `Ctrl+J` / `Ctrl+N` | Next field |
 | `Ctrl+K` | Previous field |
-| `Ctrl+T` | Choose template |
-| `←` / `→` | Change layout type |
+| `F2` | Choose template |
+| `←` / `→` | Change layout type (on layout field) |
 | `Enter` | Save |
 | `Esc` | Cancel |
 
-#### Action Menu
+### Action Menu
 | Key | Action |
 |-----|--------|
 | `j` / `k` | Navigate |
+| `1-4` | Quick select |
 | `Enter` | Execute |
 | `Esc` | Back |
 
-### Actions
+## Actions
+
+When opening a workspace (ordered by priority):
 
 | Action | Description |
 |--------|-------------|
-| **cd here** | Change to workspace directory |
-| **new tab** | Open in new Zellij tab / Tmux window |
-| **new pane** | Open in new pane |
+| **with saved layout** | Open with workspace's saved layout (if configured) |
 | **with template** | Open with a layout template |
-| **with saved layout** | Open with workspace's saved layout |
+| **new pane** | Open in new pane |
+| **new tab** | Open in new Zellij tab / Tmux window |
+| **cd here** | Change to workspace directory |
 
 ## Layout Templates
 
-Select a template when creating a workspace (`Ctrl+T`) or when opening (`with template`).
+Select a template when creating a workspace (`F2`) or when opening (`with template`).
 
 | Template | Layout |
 |----------|--------|
@@ -124,6 +141,8 @@ Workspaces are stored in `~/.config/tatami/workspaces.json`:
     {
       "name": "myproject",
       "path": "/home/user/projects/myproject",
+      "folder": "work/clients",
+      "quick_access": true,
       "layout": {
         "type": "zellij",
         "main_cmd": "nvim",
@@ -136,6 +155,15 @@ Workspaces are stored in `~/.config/tatami/workspaces.json`:
   ]
 }
 ```
+
+### Workspace Fields
+
+| Field | Description |
+|-------|-------------|
+| `name` | Workspace name |
+| `path` | Directory path |
+| `folder` | Organization folder (e.g., `work/clients`) |
+| `quick_access` | Show in Quick Access section |
 
 ### Layout Fields
 
