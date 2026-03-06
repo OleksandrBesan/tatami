@@ -178,8 +178,13 @@ func (l *ListView) EnterFolder(name string) {
 			l.currentFolder = l.currentFolder + "/" + name
 		}
 	}
-	l.cursor = 0
 	l.refreshItems()
+	// Skip ".." and start on first actual item when entering a folder
+	if name != ".." && len(l.items) > 1 {
+		l.cursor = 1
+	} else {
+		l.cursor = 0
+	}
 }
 
 // Refresh reloads items from store
