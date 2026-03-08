@@ -142,11 +142,8 @@ func buildSSHCmd(host, key, remotePath, command string) string {
 	if command != "" {
 		return fmt.Sprintf("%s -t 'cd %s && %s'", sshPart, remotePath, command)
 	}
-	shell := os.Getenv("SHELL")
-	if shell == "" {
-		shell = "$SHELL"
-	}
-	return fmt.Sprintf("%s -t 'cd %s && %s'", sshPart, remotePath, shell)
+	// Use $SHELL on the remote side, not local
+	return fmt.Sprintf("%s -t 'cd %s && exec $SHELL'", sshPart, remotePath)
 }
 
 // NewTabSSH opens a new tab with an SSH session to a remote host

@@ -81,9 +81,9 @@ func handleResult(result *tui.Result) error {
 			// For remote, SSH to the host
 			var sshCmd string
 			if ws.Remote.Key != "" {
-				sshCmd = fmt.Sprintf("ssh -i %s %s -t 'cd %s && $SHELL'", ws.Remote.Key, ws.Remote.Host, ws.Remote.Path)
+				sshCmd = fmt.Sprintf("ssh -i %s %s -t 'cd %s && exec $SHELL'", ws.Remote.Key, ws.Remote.Host, ws.Remote.Path)
 			} else {
-				sshCmd = fmt.Sprintf("ssh %s -t 'cd %s && $SHELL'", ws.Remote.Host, ws.Remote.Path)
+				sshCmd = fmt.Sprintf("ssh %s -t 'cd %s && exec $SHELL'", ws.Remote.Host, ws.Remote.Path)
 			}
 			if zellij.IsInsideSession() {
 				return zellij.WriteChars(sshCmd + "\n")
