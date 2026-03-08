@@ -64,20 +64,13 @@ Organize workspaces into folders. Navigate into folders with `Enter` or `l`, go 
 Star workspaces with `*` or `s` to pin them to the "Quick Access" section at the root level for fast access.
 
 ### Remote Workspaces
-Connect to remote servers via SSHFS. Files are mounted locally, so your local nvim/editor works with remote files.
+Connect to remote servers via SSH. Opens an SSH session directly to the remote host.
 
 1. Create workspace with **Remote Host** field (e.g., `user@server.com`)
 2. Set **Path** to remote path (e.g., `/home/user/project`)
-3. When opening, tatami auto-mounts via SSHFS
+3. When opening, tatami SSHs to the remote and runs commands there (nvim, shell, etc.)
 
-Requires SSHFS installed:
-```bash
-# macOS
-brew install macfuse && brew install sshfs
-
-# Linux
-sudo apt install sshfs
-```
+No extra dependencies required - uses standard SSH.
 
 ### Layout Templates
 Apply predefined pane layouts when opening workspaces.

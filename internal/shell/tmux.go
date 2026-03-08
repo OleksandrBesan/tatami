@@ -84,3 +84,94 @@ func (t *TmuxRunner) RunWithLayout(ws *workspace.Workspace) error {
 
 	return nil
 }
+
+// NewWindowSSH opens a new window with an SSH session to a remote host
+func (t *TmuxRunner) NewWindowSSH(host, remotePath, name string) error {
+	shell := os.Getenv("SHELL")
+	if shell == "" {
+		shell = "$SHELL"
+	}
+	sshCmd := fmt.Sprintf("ssh %s -t 'cd %s && %s'", host, remotePath, shell)
+
+	args := []string{"new-window"}
+	if name != "" {
+		args = append(args, "-n", name)
+	}
+	args = append(args, "sh", "-c", sshCmd)
+
+	cmd := exec.Command("tmux", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+// NewPaneSSH opens a new pane with an SSH session to a remote host
+func (t *TmuxRunner) NewPaneSSH(host, remotePath, direction string) error {
+	shell := os.Getenv("SHELL")
+	if shell == "" {
+		shell = "$SHELL"
+	}
+	sshCmd := fmt.Sprintf("ssh %s -t 'cd %s && %s'", host, remotePath, shell)
+
+	args := []string{"split-window"}
+	switch direction {
+	case "down":
+		args = append(args, "-v")
+	case "right":
+		args = append(args, "-h")
+	}
+	args = append(args, "sh", "-c", sshCmd)
+
+	cmd := exec.Command("tmux", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+// RunPaneSSH opens a new pane with SSH and runs a command
+func (t *TmuxRunner) RunPaneSSH(host, remotePath, direction, command string) error {
+	var sshCmd string
+	if command != "" {
+		sshCmd = fmt.Sprintf("ssh %s -t 'cd %s && %s'", host, remotePath, command)
+	} else {
+		shell := os.Getenv("SHELL")
+		if shell == "" {
+			shell = "$SHELL"
+		}
+		sshCmd = fmt.Sprintf("ssh %s -t 'cd %s && %s'", host, remotePath, shell)
+	}
+
+	args := []string{"split-window"}
+	switch direction {
+	case "down":
+		args = append(args, "-v")
+	case "right":
+		args = append(args, "-h")
+	}
+	args = append(args, "sh", "-c", sshCmd)
+
+	cmd := exec.Command("tmux", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+// RunWithLayoutSSH opens a remote workspace with its configured layout via SSH
+func (t *TmuxRunner) RunWithLayoutSSH(ws *workspace.Workspace) error {
+	host := ws.Remote.Host
+	remotePath := ws.Remote.Path
+
+	// First, create a new window with SSH
+	if err := t.NewWindowSSH(host, remotePath, ws.Name); err != nil {
+		return fmt.Errorf("failed to create window: %w", err)
+	}
+
+	// Then create panes for the layout
+	for _, pane := range ws.Layout.Panes {
+		if err := t.RunPaneSSH(host, remotePath, pane.Direction, pane.Command); err != nil {
+			return fmt.Errorf("failed to create pane: %w", err)
+		}
+	}
+
+	return nil
+}

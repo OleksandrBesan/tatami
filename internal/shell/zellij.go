@@ -129,3 +129,99 @@ func (z *ZellijRunner) RunPane(path, direction, command string) error {
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
+
+// NewTabSSH opens a new tab with an SSH session to a remote host
+func (z *ZellijRunner) NewTabSSH(host, remotePath, name string) error {
+	shell := os.Getenv("SHELL")
+	if shell == "" {
+		shell = "$SHELL"
+	}
+	sshCmd := fmt.Sprintf("ssh %s -t 'cd %s && %s'", host, remotePath, shell)
+
+	args := []string{"action", "new-tab"}
+	if name != "" {
+		args = append(args, "--name", name)
+	}
+	cmd := exec.Command("zellij", args...)
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	// Write SSH command to the new tab
+	return z.WriteChars(sshCmd + "\n")
+}
+
+// NewPaneSSH opens a new pane with an SSH session to a remote host
+func (z *ZellijRunner) NewPaneSSH(host, remotePath, direction string) error {
+	shell := os.Getenv("SHELL")
+	if shell == "" {
+		shell = "$SHELL"
+	}
+	sshCmd := fmt.Sprintf("ssh %s -t 'cd %s && %s'", host, remotePath, shell)
+
+	args := []string{"run"}
+	if direction != "" {
+		args = append(args, "--direction", direction)
+	}
+	args = append(args, "--", "sh", "-c", sshCmd)
+
+	cmd := exec.Command("zellij", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+// RunPaneSSH opens a new pane with SSH and runs a command
+func (z *ZellijRunner) RunPaneSSH(host, remotePath, direction, command string) error {
+	var sshCmd string
+	if command != "" {
+		sshCmd = fmt.Sprintf("ssh %s -t 'cd %s && %s'", host, remotePath, command)
+	} else {
+		shell := os.Getenv("SHELL")
+		if shell == "" {
+			shell = "$SHELL"
+		}
+		sshCmd = fmt.Sprintf("ssh %s -t 'cd %s && %s'", host, remotePath, shell)
+	}
+
+	args := []string{"run"}
+	if direction != "" {
+		args = append(args, "--direction", direction)
+	}
+	args = append(args, "--", "sh", "-c", sshCmd)
+
+	cmd := exec.Command("zellij", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+// RunWithLayoutSSH opens a remote workspace with its configured layout via SSH
+func (z *ZellijRunner) RunWithLayoutSSH(ws *workspace.Workspace) error {
+	host := ws.Remote.Host
+	remotePath := ws.Remote.Path
+
+	// First, create a new tab with SSH
+	if err := z.NewTabSSH(host, remotePath, ws.Name); err != nil {
+		return fmt.Errorf("failed to create tab: %w", err)
+	}
+
+	// Then create panes for the layout
+	for _, pane := range ws.Layout.Panes {
+		if err := z.RunPaneSSH(host, remotePath, pane.Direction, pane.Command); err != nil {
+			return fmt.Errorf("failed to create pane: %w", err)
+		}
+	}
+
+	// If there's a main command, focus first pane and run it
+	if ws.Layout.MainCmd != "" {
+		if err := z.FocusFirstPane(); err != nil {
+			return fmt.Errorf("failed to focus first pane: %w", err)
+		}
+		if err := z.WriteChars(ws.Layout.MainCmd + "\n"); err != nil {
+			return fmt.Errorf("failed to run main command: %w", err)
+		}
+	}
+
+	return nil
+}

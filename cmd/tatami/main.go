@@ -73,45 +73,39 @@ func handleResult(result *tui.Result) error {
 	ws := result.Workspace
 	zellij := shell.NewZellijRunner()
 	tmux := shell.NewTmuxRunner()
-	sshfs := shell.NewSSHFSRunner()
-
-	// Handle remote workspace
-	workPath := ws.Path
-	if ws.IsRemote() {
-		if !sshfs.IsInstalled() {
-			fmt.Println(sshfs.InstallInstructions())
-			return nil
-		}
-
-		// Mount remote filesystem
-		mountPoint, err := sshfs.Mount(ws.Remote.Host, ws.Remote.Path)
-		if err != nil {
-			return fmt.Errorf("failed to mount remote: %w", err)
-		}
-		workPath = mountPoint
-		fmt.Printf("Mounted %s:%s at %s\n", ws.Remote.Host, ws.Remote.Path, mountPoint)
-	}
+	isRemote := ws.IsRemote()
 
 	switch result.Action {
 	case tui.ActionCD:
-		// Check if shell wrapper is active
-		if os.Getenv("TATAMI_WRAPPER") == "1" {
-			// Wrapper will handle cd
-			fmt.Println(workPath)
+		if isRemote {
+			// For remote, SSH to the host
+			sshCmd := fmt.Sprintf("ssh %s -t 'cd %s && $SHELL'", ws.Remote.Host, ws.Remote.Path)
+			if zellij.IsInsideSession() {
+				return zellij.WriteChars(sshCmd + "\n")
+			}
+			if tmux.IsInsideSession() {
+				return tmux.SendKeys(sshCmd)
+			}
+			if err := copyToClipboard(sshCmd); err == nil {
+				fmt.Printf("%s  (copied to clipboard, paste to run)\n", sshCmd)
+			} else {
+				fmt.Println(sshCmd)
+			}
 			return nil
 		}
-		// If inside Zellij, write cd command to current pane
+
+		// Local workspace
+		if os.Getenv("TATAMI_WRAPPER") == "1" {
+			fmt.Println(ws.Path)
+			return nil
+		}
 		if zellij.IsInsideSession() {
-			cdCmd := fmt.Sprintf("cd %s\n", workPath)
-			return zellij.WriteChars(cdCmd)
+			return zellij.WriteChars(fmt.Sprintf("cd %s\n", ws.Path))
 		}
-		// If inside Tmux, send keys to current pane
 		if tmux.IsInsideSession() {
-			cdCmd := fmt.Sprintf("cd %s", workPath)
-			return tmux.SendKeys(cdCmd)
+			return tmux.SendKeys(fmt.Sprintf("cd %s", ws.Path))
 		}
-		// Fallback - copy to clipboard
-		cdCmd := fmt.Sprintf("cd %s", workPath)
+		cdCmd := fmt.Sprintf("cd %s", ws.Path)
 		if err := copyToClipboard(cdCmd); err == nil {
 			fmt.Printf("%s  (copied to clipboard, paste to run)\n", cdCmd)
 		} else {
@@ -120,34 +114,58 @@ func handleResult(result *tui.Result) error {
 		return nil
 
 	case tui.ActionNewTab:
-		if zellij.IsInsideSession() {
-			return zellij.NewTab(workPath, ws.Name)
-		}
-		if tmux.IsInsideSession() {
-			return tmux.NewWindow(workPath, ws.Name)
+		if isRemote {
+			if zellij.IsInsideSession() {
+				return zellij.NewTabSSH(ws.Remote.Host, ws.Remote.Path, ws.Name)
+			}
+			if tmux.IsInsideSession() {
+				return tmux.NewWindowSSH(ws.Remote.Host, ws.Remote.Path, ws.Name)
+			}
+		} else {
+			if zellij.IsInsideSession() {
+				return zellij.NewTab(ws.Path, ws.Name)
+			}
+			if tmux.IsInsideSession() {
+				return tmux.NewWindow(ws.Path, ws.Name)
+			}
 		}
 		fmt.Fprintf(os.Stderr, "Not inside a Zellij or Tmux session\n")
 		return nil
 
 	case tui.ActionNewPane:
-		if zellij.IsInsideSession() {
-			return zellij.NewPane(workPath, "down")
-		}
-		if tmux.IsInsideSession() {
-			return tmux.NewPane(workPath, "down")
+		if isRemote {
+			if zellij.IsInsideSession() {
+				return zellij.NewPaneSSH(ws.Remote.Host, ws.Remote.Path, "down")
+			}
+			if tmux.IsInsideSession() {
+				return tmux.NewPaneSSH(ws.Remote.Host, ws.Remote.Path, "down")
+			}
+		} else {
+			if zellij.IsInsideSession() {
+				return zellij.NewPane(ws.Path, "down")
+			}
+			if tmux.IsInsideSession() {
+				return tmux.NewPane(ws.Path, "down")
+			}
 		}
 		fmt.Fprintf(os.Stderr, "Not inside a Zellij or Tmux session\n")
 		return nil
 
 	case tui.ActionWithLayout:
-		// Create workspace copy with local path for layouts
-		layoutWs := *ws
-		layoutWs.Path = workPath
-		if zellij.IsInsideSession() && ws.Layout.Type == workspace.LayoutZellij {
-			return zellij.RunWithLayout(&layoutWs)
-		}
-		if tmux.IsInsideSession() && ws.Layout.Type == workspace.LayoutTmux {
-			return tmux.RunWithLayout(&layoutWs)
+		if isRemote {
+			if zellij.IsInsideSession() && ws.Layout.Type == workspace.LayoutZellij {
+				return zellij.RunWithLayoutSSH(ws)
+			}
+			if tmux.IsInsideSession() && ws.Layout.Type == workspace.LayoutTmux {
+				return tmux.RunWithLayoutSSH(ws)
+			}
+		} else {
+			if zellij.IsInsideSession() && ws.Layout.Type == workspace.LayoutZellij {
+				return zellij.RunWithLayout(ws)
+			}
+			if tmux.IsInsideSession() && ws.Layout.Type == workspace.LayoutTmux {
+				return tmux.RunWithLayout(ws)
+			}
 		}
 		fmt.Fprintf(os.Stderr, "Layout type mismatch or not inside session\n")
 		return nil
@@ -156,22 +174,33 @@ func handleResult(result *tui.Result) error {
 		if result.Template == nil {
 			return fmt.Errorf("no template selected")
 		}
-		// Create a temporary workspace with template panes
 		tmplWs := &workspace.Workspace{
-			Name: ws.Name,
-			Path: workPath,
+			Name:   ws.Name,
+			Path:   ws.Path,
+			Remote: ws.Remote,
 			Layout: workspace.Layout{
 				MainCmd: result.Template.MainCmd,
 				Panes:   result.Template.Panes,
 			},
 		}
-		if zellij.IsInsideSession() {
-			tmplWs.Layout.Type = workspace.LayoutZellij
-			return zellij.RunWithLayout(tmplWs)
-		}
-		if tmux.IsInsideSession() {
-			tmplWs.Layout.Type = workspace.LayoutTmux
-			return tmux.RunWithLayout(tmplWs)
+		if isRemote {
+			if zellij.IsInsideSession() {
+				tmplWs.Layout.Type = workspace.LayoutZellij
+				return zellij.RunWithLayoutSSH(tmplWs)
+			}
+			if tmux.IsInsideSession() {
+				tmplWs.Layout.Type = workspace.LayoutTmux
+				return tmux.RunWithLayoutSSH(tmplWs)
+			}
+		} else {
+			if zellij.IsInsideSession() {
+				tmplWs.Layout.Type = workspace.LayoutZellij
+				return zellij.RunWithLayout(tmplWs)
+			}
+			if tmux.IsInsideSession() {
+				tmplWs.Layout.Type = workspace.LayoutTmux
+				return tmux.RunWithLayout(tmplWs)
+			}
 		}
 		fmt.Fprintf(os.Stderr, "Not inside a Zellij or Tmux session\n")
 		return nil
