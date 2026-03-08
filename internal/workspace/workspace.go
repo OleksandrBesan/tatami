@@ -24,8 +24,9 @@ type Layout struct {
 
 // Remote represents remote connection settings
 type Remote struct {
-	Host string `json:"host"` // user@hostname or hostname
-	Path string `json:"path"` // Remote path
+	Host string `json:"host"`          // user@hostname or hostname
+	Path string `json:"path"`          // Remote path
+	Key  string `json:"key,omitempty"` // SSH key path (optional)
 }
 
 // Workspace represents a terminal workspace

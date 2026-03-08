@@ -15,6 +15,7 @@ const (
 	fieldName createField = iota
 	fieldPath
 	fieldRemoteHost
+	fieldSSHKey
 	fieldFolder
 	fieldLayoutType
 )
@@ -24,6 +25,7 @@ type CreateView struct {
 	nameInput       textinput.Model
 	pathPicker      *PathPicker
 	remoteHostInput textinput.Model
+	sshKeyInput     textinput.Model
 	folderInput     textinput.Model
 	layoutType      workspace.LayoutType
 	layoutTypes     []workspace.LayoutType
@@ -51,6 +53,11 @@ func NewCreateView() *CreateView {
 	remoteHostInput.CharLimit = 100
 	remoteHostInput.Width = 30
 
+	sshKeyInput := textinput.New()
+	sshKeyInput.Placeholder = "~/.ssh/id_rsa (optional)"
+	sshKeyInput.CharLimit = 200
+	sshKeyInput.Width = 30
+
 	folderInput := textinput.New()
 	folderInput.Placeholder = "folder/path (optional)"
 	folderInput.CharLimit = 100
@@ -60,6 +67,7 @@ func NewCreateView() *CreateView {
 		nameInput:       nameInput,
 		pathPicker:      NewPathPicker(),
 		remoteHostInput: remoteHostInput,
+		sshKeyInput:     sshKeyInput,
 		folderInput:     folderInput,
 		layoutType:      workspace.LayoutNone,
 		layoutTypes:     []workspace.LayoutType{workspace.LayoutNone, workspace.LayoutZellij, workspace.LayoutTmux},
@@ -73,6 +81,7 @@ func (c *CreateView) Reset() {
 	c.nameInput.SetValue("")
 	c.pathPicker.SetValue("")
 	c.remoteHostInput.SetValue("")
+	c.sshKeyInput.SetValue("")
 	c.folderInput.SetValue("")
 	c.layoutType = workspace.LayoutNone
 	c.layoutPanes = nil
@@ -86,6 +95,7 @@ func (c *CreateView) Reset() {
 	c.nameInput.Focus()
 	c.pathPicker.Blur()
 	c.remoteHostInput.Blur()
+	c.sshKeyInput.Blur()
 	c.folderInput.Blur()
 }
 
@@ -100,8 +110,10 @@ func (c *CreateView) EditWorkspace(ws *workspace.Workspace) {
 	c.pathPicker.SetValue(ws.Path)
 	if ws.Remote != nil {
 		c.remoteHostInput.SetValue(ws.Remote.Host)
+		c.sshKeyInput.SetValue(ws.Remote.Key)
 	} else {
 		c.remoteHostInput.SetValue("")
+		c.sshKeyInput.SetValue("")
 	}
 	c.folderInput.SetValue(ws.Folder)
 	c.layoutType = ws.Layout.Type
@@ -116,6 +128,7 @@ func (c *CreateView) EditWorkspace(ws *workspace.Workspace) {
 	c.nameInput.Focus()
 	c.pathPicker.Blur()
 	c.remoteHostInput.Blur()
+	c.sshKeyInput.Blur()
 	c.folderInput.Blur()
 }
 
@@ -162,6 +175,7 @@ func (c *CreateView) GetWorkspace() *workspace.Workspace {
 		ws.Remote = &workspace.Remote{
 			Host: remoteHost,
 			Path: c.pathPicker.Value(),
+			Key:  strings.TrimSpace(c.sshKeyInput.Value()),
 		}
 	}
 	return ws
@@ -223,6 +237,8 @@ func (c *CreateView) Update(msg tea.Msg) tea.Cmd {
 		cmd = c.pathPicker.Update(msg)
 	case fieldRemoteHost:
 		c.remoteHostInput, cmd = c.remoteHostInput.Update(msg)
+	case fieldSSHKey:
+		c.sshKeyInput, cmd = c.sshKeyInput.Update(msg)
 	case fieldFolder:
 		c.folderInput, cmd = c.folderInput.Update(msg)
 	}
@@ -231,12 +247,12 @@ func (c *CreateView) Update(msg tea.Msg) tea.Cmd {
 }
 
 func (c *CreateView) nextField() {
-	c.activeField = (c.activeField + 1) % 5
+	c.activeField = (c.activeField + 1) % 6
 	c.updateFocus()
 }
 
 func (c *CreateView) prevField() {
-	c.activeField = (c.activeField + 4) % 5
+	c.activeField = (c.activeField + 5) % 6
 	c.updateFocus()
 }
 
@@ -244,6 +260,7 @@ func (c *CreateView) updateFocus() {
 	c.nameInput.Blur()
 	c.pathPicker.Blur()
 	c.remoteHostInput.Blur()
+	c.sshKeyInput.Blur()
 	c.folderInput.Blur()
 
 	switch c.activeField {
@@ -253,6 +270,8 @@ func (c *CreateView) updateFocus() {
 		c.pathPicker.Focus()
 	case fieldRemoteHost:
 		c.remoteHostInput.Focus()
+	case fieldSSHKey:
+		c.sshKeyInput.Focus()
 	case fieldFolder:
 		c.folderInput.Focus()
 	}
@@ -322,6 +341,19 @@ func (c *CreateView) View() string {
 	b.WriteString("\n")
 	b.WriteString("  ")
 	b.WriteString(c.remoteHostInput.View())
+	b.WriteString("\n\n")
+
+	// SSH Key field
+	sshKeyLabel := "SSH Key"
+	if c.activeField == fieldSSHKey {
+		sshKeyLabel = "> " + sshKeyLabel
+	} else {
+		sshKeyLabel = "  " + sshKeyLabel
+	}
+	b.WriteString(labelStyle.Render(sshKeyLabel))
+	b.WriteString("\n")
+	b.WriteString("  ")
+	b.WriteString(c.sshKeyInput.View())
 	b.WriteString("\n\n")
 
 	// Folder field

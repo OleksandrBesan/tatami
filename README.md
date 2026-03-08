@@ -67,8 +67,9 @@ Star workspaces with `*` or `s` to pin them to the "Quick Access" section at the
 Connect to remote servers via SSH. Opens an SSH session directly to the remote host.
 
 1. Create workspace with **Remote Host** field (e.g., `user@server.com`)
-2. Set **Path** to remote path (e.g., `/home/user/project`)
-3. When opening, tatami SSHs to the remote and runs commands there (nvim, shell, etc.)
+2. Set **SSH Key** if needed (e.g., `~/.ssh/my_key`)
+3. Set **Path** to remote path (e.g., `/home/user/project`)
+4. When opening, tatami SSHs to the remote and runs commands there (nvim, shell, etc.)
 
 No extra dependencies required - uses standard SSH.
 
@@ -166,6 +167,7 @@ Workspaces are stored in `~/.config/tatami/workspaces.json`:
       "path": "/home/user/project",
       "remote": {
         "host": "user@server.com",
+        "key": "~/.ssh/server_key",
         "path": "/home/user/project"
       },
       "layout": { "type": "zellij", "panes": [] }
@@ -183,6 +185,7 @@ Workspaces are stored in `~/.config/tatami/workspaces.json`:
 | `folder` | Organization folder (e.g., `work/clients`) |
 | `quick_access` | Show in Quick Access section |
 | `remote.host` | Remote host (e.g., `user@server.com`) |
+| `remote.key` | SSH key path (e.g., `~/.ssh/my_key`) |
 | `remote.path` | Path on remote server |
 
 ### Layout Fields

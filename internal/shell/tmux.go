@@ -85,13 +85,28 @@ func (t *TmuxRunner) RunWithLayout(ws *workspace.Workspace) error {
 	return nil
 }
 
-// NewWindowSSH opens a new window with an SSH session to a remote host
-func (t *TmuxRunner) NewWindowSSH(host, remotePath, name string) error {
+// buildTmuxSSHCmd builds an SSH command string with optional key and command
+func buildTmuxSSHCmd(host, key, remotePath, command string) string {
+	var sshPart string
+	if key != "" {
+		sshPart = fmt.Sprintf("ssh -i %s %s", key, host)
+	} else {
+		sshPart = fmt.Sprintf("ssh %s", host)
+	}
+
+	if command != "" {
+		return fmt.Sprintf("%s -t 'cd %s && %s'", sshPart, remotePath, command)
+	}
 	shell := os.Getenv("SHELL")
 	if shell == "" {
 		shell = "$SHELL"
 	}
-	sshCmd := fmt.Sprintf("ssh %s -t 'cd %s && %s'", host, remotePath, shell)
+	return fmt.Sprintf("%s -t 'cd %s && %s'", sshPart, remotePath, shell)
+}
+
+// NewWindowSSH opens a new window with an SSH session to a remote host
+func (t *TmuxRunner) NewWindowSSH(host, key, remotePath, name string) error {
+	sshCmd := buildTmuxSSHCmd(host, key, remotePath, "")
 
 	args := []string{"new-window"}
 	if name != "" {
@@ -106,12 +121,8 @@ func (t *TmuxRunner) NewWindowSSH(host, remotePath, name string) error {
 }
 
 // NewPaneSSH opens a new pane with an SSH session to a remote host
-func (t *TmuxRunner) NewPaneSSH(host, remotePath, direction string) error {
-	shell := os.Getenv("SHELL")
-	if shell == "" {
-		shell = "$SHELL"
-	}
-	sshCmd := fmt.Sprintf("ssh %s -t 'cd %s && %s'", host, remotePath, shell)
+func (t *TmuxRunner) NewPaneSSH(host, key, remotePath, direction string) error {
+	sshCmd := buildTmuxSSHCmd(host, key, remotePath, "")
 
 	args := []string{"split-window"}
 	switch direction {
@@ -129,17 +140,8 @@ func (t *TmuxRunner) NewPaneSSH(host, remotePath, direction string) error {
 }
 
 // RunPaneSSH opens a new pane with SSH and runs a command
-func (t *TmuxRunner) RunPaneSSH(host, remotePath, direction, command string) error {
-	var sshCmd string
-	if command != "" {
-		sshCmd = fmt.Sprintf("ssh %s -t 'cd %s && %s'", host, remotePath, command)
-	} else {
-		shell := os.Getenv("SHELL")
-		if shell == "" {
-			shell = "$SHELL"
-		}
-		sshCmd = fmt.Sprintf("ssh %s -t 'cd %s && %s'", host, remotePath, shell)
-	}
+func (t *TmuxRunner) RunPaneSSH(host, key, remotePath, direction, command string) error {
+	sshCmd := buildTmuxSSHCmd(host, key, remotePath, command)
 
 	args := []string{"split-window"}
 	switch direction {
@@ -159,16 +161,17 @@ func (t *TmuxRunner) RunPaneSSH(host, remotePath, direction, command string) err
 // RunWithLayoutSSH opens a remote workspace with its configured layout via SSH
 func (t *TmuxRunner) RunWithLayoutSSH(ws *workspace.Workspace) error {
 	host := ws.Remote.Host
+	key := ws.Remote.Key
 	remotePath := ws.Remote.Path
 
 	// First, create a new window with SSH
-	if err := t.NewWindowSSH(host, remotePath, ws.Name); err != nil {
+	if err := t.NewWindowSSH(host, key, remotePath, ws.Name); err != nil {
 		return fmt.Errorf("failed to create window: %w", err)
 	}
 
 	// Then create panes for the layout
 	for _, pane := range ws.Layout.Panes {
-		if err := t.RunPaneSSH(host, remotePath, pane.Direction, pane.Command); err != nil {
+		if err := t.RunPaneSSH(host, key, remotePath, pane.Direction, pane.Command); err != nil {
 			return fmt.Errorf("failed to create pane: %w", err)
 		}
 	}

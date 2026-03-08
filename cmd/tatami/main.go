@@ -79,7 +79,12 @@ func handleResult(result *tui.Result) error {
 	case tui.ActionCD:
 		if isRemote {
 			// For remote, SSH to the host
-			sshCmd := fmt.Sprintf("ssh %s -t 'cd %s && $SHELL'", ws.Remote.Host, ws.Remote.Path)
+			var sshCmd string
+			if ws.Remote.Key != "" {
+				sshCmd = fmt.Sprintf("ssh -i %s %s -t 'cd %s && $SHELL'", ws.Remote.Key, ws.Remote.Host, ws.Remote.Path)
+			} else {
+				sshCmd = fmt.Sprintf("ssh %s -t 'cd %s && $SHELL'", ws.Remote.Host, ws.Remote.Path)
+			}
 			if zellij.IsInsideSession() {
 				return zellij.WriteChars(sshCmd + "\n")
 			}
@@ -116,10 +121,10 @@ func handleResult(result *tui.Result) error {
 	case tui.ActionNewTab:
 		if isRemote {
 			if zellij.IsInsideSession() {
-				return zellij.NewTabSSH(ws.Remote.Host, ws.Remote.Path, ws.Name)
+				return zellij.NewTabSSH(ws.Remote.Host, ws.Remote.Key, ws.Remote.Path, ws.Name)
 			}
 			if tmux.IsInsideSession() {
-				return tmux.NewWindowSSH(ws.Remote.Host, ws.Remote.Path, ws.Name)
+				return tmux.NewWindowSSH(ws.Remote.Host, ws.Remote.Key, ws.Remote.Path, ws.Name)
 			}
 		} else {
 			if zellij.IsInsideSession() {
@@ -135,10 +140,10 @@ func handleResult(result *tui.Result) error {
 	case tui.ActionNewPane:
 		if isRemote {
 			if zellij.IsInsideSession() {
-				return zellij.NewPaneSSH(ws.Remote.Host, ws.Remote.Path, "down")
+				return zellij.NewPaneSSH(ws.Remote.Host, ws.Remote.Key, ws.Remote.Path, "down")
 			}
 			if tmux.IsInsideSession() {
-				return tmux.NewPaneSSH(ws.Remote.Host, ws.Remote.Path, "down")
+				return tmux.NewPaneSSH(ws.Remote.Host, ws.Remote.Key, ws.Remote.Path, "down")
 			}
 		} else {
 			if zellij.IsInsideSession() {
