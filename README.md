@@ -63,6 +63,22 @@ Organize workspaces into folders. Navigate into folders with `Enter` or `l`, go 
 ### Quick Access
 Star workspaces with `*` or `s` to pin them to the "Quick Access" section at the root level for fast access.
 
+### Remote Workspaces
+Connect to remote servers via SSHFS. Files are mounted locally, so your local nvim/editor works with remote files.
+
+1. Create workspace with **Remote Host** field (e.g., `user@server.com`)
+2. Set **Path** to remote path (e.g., `/home/user/project`)
+3. When opening, tatami auto-mounts via SSHFS
+
+Requires SSHFS installed:
+```bash
+# macOS
+brew install macfuse && brew install sshfs
+
+# Linux
+sudo apt install sshfs
+```
+
 ### Layout Templates
 Apply predefined pane layouts when opening workspaces.
 
@@ -151,6 +167,15 @@ Workspaces are stored in `~/.config/tatami/workspaces.json`:
           { "command": "", "direction": "down" }
         ]
       }
+    },
+    {
+      "name": "server-project",
+      "path": "/home/user/project",
+      "remote": {
+        "host": "user@server.com",
+        "path": "/home/user/project"
+      },
+      "layout": { "type": "zellij", "panes": [] }
     }
   ]
 }
@@ -161,9 +186,11 @@ Workspaces are stored in `~/.config/tatami/workspaces.json`:
 | Field | Description |
 |-------|-------------|
 | `name` | Workspace name |
-| `path` | Directory path |
+| `path` | Directory path (local or remote) |
 | `folder` | Organization folder (e.g., `work/clients`) |
 | `quick_access` | Show in Quick Access section |
+| `remote.host` | Remote host (e.g., `user@server.com`) |
+| `remote.path` | Path on remote server |
 
 ### Layout Fields
 

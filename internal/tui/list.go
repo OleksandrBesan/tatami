@@ -337,7 +337,15 @@ func (l *ListView) View() string {
 				}
 				ws := item.Workspace
 				name := style.Render(ws.Name)
-				path := mutedStyle.Render(shortenPath(ws.Path, 40))
+
+				// Show path - for remote show host:path
+				var pathStr string
+				if ws.IsRemote() {
+					pathStr = fmt.Sprintf("%s:%s", ws.Remote.Host, shortenPath(ws.Remote.Path, 30))
+				} else {
+					pathStr = shortenPath(ws.Path, 40)
+				}
+				path := mutedStyle.Render(pathStr)
 
 				star := "  "
 				if ws.QuickAccess {

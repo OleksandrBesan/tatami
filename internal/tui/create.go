@@ -14,21 +14,23 @@ type createField int
 const (
 	fieldName createField = iota
 	fieldPath
+	fieldRemoteHost
 	fieldFolder
 	fieldLayoutType
 )
 
 // CreateView handles workspace creation and editing
 type CreateView struct {
-	nameInput     textinput.Model
-	pathPicker    *PathPicker
-	folderInput   textinput.Model
-	layoutType    workspace.LayoutType
-	layoutTypes   []workspace.LayoutType
-	layoutPanes   []workspace.Pane
-	layoutMainCmd string
-	templateName  string
-	quickAccess   bool
+	nameInput       textinput.Model
+	pathPicker      *PathPicker
+	remoteHostInput textinput.Model
+	folderInput     textinput.Model
+	layoutType      workspace.LayoutType
+	layoutTypes     []workspace.LayoutType
+	layoutPanes     []workspace.Pane
+	layoutMainCmd   string
+	templateName    string
+	quickAccess     bool
 
 	activeField createField
 	editing     bool
@@ -44,19 +46,25 @@ func NewCreateView() *CreateView {
 	nameInput.Width = 30
 	nameInput.Focus()
 
+	remoteHostInput := textinput.New()
+	remoteHostInput.Placeholder = "user@host (optional, for remote)"
+	remoteHostInput.CharLimit = 100
+	remoteHostInput.Width = 30
+
 	folderInput := textinput.New()
 	folderInput.Placeholder = "folder/path (optional)"
 	folderInput.CharLimit = 100
 	folderInput.Width = 30
 
 	return &CreateView{
-		nameInput:   nameInput,
-		pathPicker:  NewPathPicker(),
-		folderInput: folderInput,
-		layoutType:  workspace.LayoutNone,
-		layoutTypes: []workspace.LayoutType{workspace.LayoutNone, workspace.LayoutZellij, workspace.LayoutTmux},
-		activeField: fieldName,
-		editing:     false,
+		nameInput:       nameInput,
+		pathPicker:      NewPathPicker(),
+		remoteHostInput: remoteHostInput,
+		folderInput:     folderInput,
+		layoutType:      workspace.LayoutNone,
+		layoutTypes:     []workspace.LayoutType{workspace.LayoutNone, workspace.LayoutZellij, workspace.LayoutTmux},
+		activeField:     fieldName,
+		editing:         false,
 	}
 }
 
@@ -64,6 +72,7 @@ func NewCreateView() *CreateView {
 func (c *CreateView) Reset() {
 	c.nameInput.SetValue("")
 	c.pathPicker.SetValue("")
+	c.remoteHostInput.SetValue("")
 	c.folderInput.SetValue("")
 	c.layoutType = workspace.LayoutNone
 	c.layoutPanes = nil
@@ -76,6 +85,7 @@ func (c *CreateView) Reset() {
 	c.errorMsg = ""
 	c.nameInput.Focus()
 	c.pathPicker.Blur()
+	c.remoteHostInput.Blur()
 	c.folderInput.Blur()
 }
 
@@ -88,6 +98,11 @@ func (c *CreateView) SetFolder(folder string) {
 func (c *CreateView) EditWorkspace(ws *workspace.Workspace) {
 	c.nameInput.SetValue(ws.Name)
 	c.pathPicker.SetValue(ws.Path)
+	if ws.Remote != nil {
+		c.remoteHostInput.SetValue(ws.Remote.Host)
+	} else {
+		c.remoteHostInput.SetValue("")
+	}
 	c.folderInput.SetValue(ws.Folder)
 	c.layoutType = ws.Layout.Type
 	c.layoutPanes = ws.Layout.Panes
@@ -100,6 +115,7 @@ func (c *CreateView) EditWorkspace(ws *workspace.Workspace) {
 	c.errorMsg = ""
 	c.nameInput.Focus()
 	c.pathPicker.Blur()
+	c.remoteHostInput.Blur()
 	c.folderInput.Blur()
 }
 
@@ -139,6 +155,15 @@ func (c *CreateView) GetWorkspace() *workspace.Workspace {
 	ws.Layout.Type = c.layoutType
 	ws.Layout.MainCmd = c.layoutMainCmd
 	ws.Layout.Panes = c.layoutPanes
+
+	// Set remote if host is provided
+	remoteHost := strings.TrimSpace(c.remoteHostInput.Value())
+	if remoteHost != "" {
+		ws.Remote = &workspace.Remote{
+			Host: remoteHost,
+			Path: c.pathPicker.Value(),
+		}
+	}
 	return ws
 }
 
@@ -196,6 +221,8 @@ func (c *CreateView) Update(msg tea.Msg) tea.Cmd {
 		c.nameInput, cmd = c.nameInput.Update(msg)
 	case fieldPath:
 		cmd = c.pathPicker.Update(msg)
+	case fieldRemoteHost:
+		c.remoteHostInput, cmd = c.remoteHostInput.Update(msg)
 	case fieldFolder:
 		c.folderInput, cmd = c.folderInput.Update(msg)
 	}
@@ -204,18 +231,19 @@ func (c *CreateView) Update(msg tea.Msg) tea.Cmd {
 }
 
 func (c *CreateView) nextField() {
-	c.activeField = (c.activeField + 1) % 4
+	c.activeField = (c.activeField + 1) % 5
 	c.updateFocus()
 }
 
 func (c *CreateView) prevField() {
-	c.activeField = (c.activeField + 3) % 4
+	c.activeField = (c.activeField + 4) % 5
 	c.updateFocus()
 }
 
 func (c *CreateView) updateFocus() {
 	c.nameInput.Blur()
 	c.pathPicker.Blur()
+	c.remoteHostInput.Blur()
 	c.folderInput.Blur()
 
 	switch c.activeField {
@@ -223,6 +251,8 @@ func (c *CreateView) updateFocus() {
 		c.nameInput.Focus()
 	case fieldPath:
 		c.pathPicker.Focus()
+	case fieldRemoteHost:
+		c.remoteHostInput.Focus()
 	case fieldFolder:
 		c.folderInput.Focus()
 	}
@@ -267,6 +297,9 @@ func (c *CreateView) View() string {
 
 	// Path field
 	pathLabel := "Path"
+	if c.remoteHostInput.Value() != "" {
+		pathLabel = "Remote Path"
+	}
 	if c.activeField == fieldPath {
 		pathLabel = "> " + pathLabel
 	} else {
@@ -276,6 +309,19 @@ func (c *CreateView) View() string {
 	b.WriteString("\n")
 	b.WriteString("  ")
 	b.WriteString(c.pathPicker.View())
+	b.WriteString("\n\n")
+
+	// Remote host field
+	remoteLabel := "Remote Host"
+	if c.activeField == fieldRemoteHost {
+		remoteLabel = "> " + remoteLabel
+	} else {
+		remoteLabel = "  " + remoteLabel
+	}
+	b.WriteString(labelStyle.Render(remoteLabel))
+	b.WriteString("\n")
+	b.WriteString("  ")
+	b.WriteString(c.remoteHostInput.View())
 	b.WriteString("\n\n")
 
 	// Folder field

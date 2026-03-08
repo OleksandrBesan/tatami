@@ -22,13 +22,25 @@ type Layout struct {
 	Panes   []Pane     `json:"panes"`
 }
 
+// Remote represents remote connection settings
+type Remote struct {
+	Host string `json:"host"` // user@hostname or hostname
+	Path string `json:"path"` // Remote path
+}
+
 // Workspace represents a terminal workspace
 type Workspace struct {
-	Name        string `json:"name"`
-	Path        string `json:"path"`
-	Folder      string `json:"folder,omitempty"`      // Folder path like "work/clients"
-	QuickAccess bool   `json:"quick_access,omitempty"` // Show in quick access
-	Layout      Layout `json:"layout"`
+	Name        string  `json:"name"`
+	Path        string  `json:"path"`
+	Folder      string  `json:"folder,omitempty"`       // Folder path like "work/clients"
+	QuickAccess bool    `json:"quick_access,omitempty"` // Show in quick access
+	Remote      *Remote `json:"remote,omitempty"`       // Remote connection settings
+	Layout      Layout  `json:"layout"`
+}
+
+// IsRemote returns true if this is a remote workspace
+func (w *Workspace) IsRemote() bool {
+	return w.Remote != nil && w.Remote.Host != ""
 }
 
 // NewWorkspace creates a new workspace with default values
