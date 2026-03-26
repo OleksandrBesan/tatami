@@ -91,6 +91,90 @@ func GetTemplates() []Template {
 				{Command: "", Direction: "down"},
 			},
 		},
+		// AI assistant layouts - Claude
+		{
+			Name:        "claude",
+			Description: "claude fullscreen",
+			MainCmd:     "claude",
+			Panes:       []Pane{},
+		},
+		{
+			Name:        "claude-left",
+			Description: "claude LEFT, term RIGHT",
+			MainCmd:     "claude",
+			Panes: []Pane{
+				{Command: "", Direction: "right"},
+			},
+		},
+		{
+			Name:        "claude-left-nvim",
+			Description: "claude LEFT, nvim RIGHT",
+			MainCmd:     "claude",
+			Panes: []Pane{
+				{Command: "nvim", Direction: "right"},
+			},
+		},
+		{
+			Name:        "nvim-left-claude",
+			Description: "nvim LEFT, claude RIGHT",
+			MainCmd:     "nvim",
+			Panes: []Pane{
+				{Command: "claude", Direction: "right"},
+			},
+		},
+		{
+			Name:        "term-left-claude",
+			Description: "term LEFT, claude RIGHT",
+			Panes: []Pane{
+				{Command: "claude", Direction: "right"},
+			},
+		},
+		// AI assistant layouts - Gemini
+		{
+			Name:        "gemini",
+			Description: "gemini fullscreen",
+			MainCmd:     "gemini",
+			Panes:       []Pane{},
+		},
+		{
+			Name:        "gemini-left",
+			Description: "gemini LEFT, term RIGHT",
+			MainCmd:     "gemini",
+			Panes: []Pane{
+				{Command: "", Direction: "right"},
+			},
+		},
+		{
+			Name:        "nvim-left-gemini",
+			Description: "nvim LEFT, gemini RIGHT",
+			MainCmd:     "nvim",
+			Panes: []Pane{
+				{Command: "gemini", Direction: "right"},
+			},
+		},
+		// AI assistant layouts - Codex
+		{
+			Name:        "codex",
+			Description: "codex fullscreen",
+			MainCmd:     "codex",
+			Panes:       []Pane{},
+		},
+		{
+			Name:        "codex-left",
+			Description: "codex LEFT, term RIGHT",
+			MainCmd:     "codex",
+			Panes: []Pane{
+				{Command: "", Direction: "right"},
+			},
+		},
+		{
+			Name:        "nvim-left-codex",
+			Description: "nvim LEFT, codex RIGHT",
+			MainCmd:     "nvim",
+			Panes: []Pane{
+				{Command: "codex", Direction: "right"},
+			},
+		},
 	}
 }
 
