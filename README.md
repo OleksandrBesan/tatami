@@ -73,8 +73,23 @@ Connect to remote servers via SSH. Opens an SSH session directly to the remote h
 
 No extra dependencies required - uses standard SSH.
 
+### Git Worktrees
+Open worktrees in new tabs for git-enabled workspaces. When selecting a workspace that is a git repository:
+
+1. Select **"open worktree..."** from the action menu
+2. Choose an existing worktree or create a new one
+3. Select how to open:
+   - **with saved layout** - use workspace's configured layout
+   - **with template...** - choose a layout template
+   - **plain** - open simple tab
+
+Worktrees are created at `.worktrees/<branch-name>/` inside the repository.
+
 ### Layout Templates
 Apply predefined pane layouts when opening workspaces.
+
+### Stacked Panes (Zellij)
+Use `stack` direction to create stacked/tabbed panes that share the same space. Switch between stacked panes with Zellij shortcuts (`Ctrl+p` then `w`).
 
 ## Keyboard Shortcuts
 
@@ -112,6 +127,15 @@ Apply predefined pane layouts when opening workspaces.
 | `Enter` | Execute |
 | `Esc` | Back |
 
+### Worktree View
+| Key | Action |
+|-----|--------|
+| `j` / `k` | Navigate |
+| `Enter` | Select worktree / Create new |
+| `d` | Delete worktree |
+| `Tab` | Cycle branch suggestions (when creating) |
+| `Esc` | Back |
+
 ## Actions
 
 When opening a workspace (ordered by priority):
@@ -119,6 +143,7 @@ When opening a workspace (ordered by priority):
 | Action | Description |
 |--------|-------------|
 | **with saved layout** | Open with workspace's saved layout (if configured) |
+| **open worktree...** | Open git worktree in new tab (git repos only) |
 | **with template** | Open with a layout template |
 | **new pane** | Open in new pane |
 | **new tab** | Open in new Zellij tab / Tmux window |
@@ -128,6 +153,7 @@ When opening a workspace (ordered by priority):
 
 Select a template when creating a workspace (`F2`) or when opening (`with template`).
 
+### Editor Layouts
 | Template | Layout |
 |----------|--------|
 | `nvim-left` | nvim LEFT, term RIGHT |
@@ -137,9 +163,31 @@ Select a template when creating a workspace (`F2`) or when opening (`with templa
 | `term-left-nvim` | term LEFT, nvim RIGHT |
 | `term-left-lazygit` | term LEFT, lazygit RIGHT |
 | `term-left-nvim-lazygit` | term LEFT, nvim RIGHT TOP, lazygit RIGHT BOTTOM |
+
+### Terminal Layouts
+| Template | Layout |
+|----------|--------|
 | `2-side` | term LEFT, term RIGHT |
 | `2-stack` | term TOP, term BOTTOM |
 | `3-right-stack` | term LEFT, term RIGHT TOP, term RIGHT BOTTOM |
+
+### AI Assistant Layouts (Claude, Gemini, Codex)
+| Template | Layout |
+|----------|--------|
+| `claude` | claude fullscreen |
+| `claude-left` | claude LEFT, term RIGHT |
+| `claude-left-nvim` | claude LEFT, nvim RIGHT |
+| `nvim-left-claude` | nvim LEFT, claude RIGHT |
+| `nvim-left-claude-term` | nvim LEFT, claude RIGHT TOP, term RIGHT BOTTOM |
+| `nvim-left-claude-term-stack` | nvim LEFT, stacked [claude\|term] RIGHT |
+| `nvim-left-term-claude-stack` | nvim LEFT, stacked [term\|claude] RIGHT |
+| `term-left-claude` | term LEFT, claude RIGHT |
+| `gemini` | gemini fullscreen |
+| `gemini-left` | gemini LEFT, term RIGHT |
+| `nvim-left-gemini` | nvim LEFT, gemini RIGHT |
+| `codex` | codex fullscreen |
+| `codex-left` | codex LEFT, term RIGHT |
+| `nvim-left-codex` | nvim LEFT, codex RIGHT |
 
 ## Configuration
 
@@ -157,8 +205,8 @@ Workspaces are stored in `~/.config/tatami/workspaces.json`:
         "type": "zellij",
         "main_cmd": "nvim",
         "panes": [
-          { "command": "", "direction": "right" },
-          { "command": "", "direction": "down" }
+          { "command": "claude", "direction": "right" },
+          { "command": "", "direction": "stack" }
         ]
       }
     },
@@ -196,7 +244,7 @@ Workspaces are stored in `~/.config/tatami/workspaces.json`:
 | `main_cmd` | Command to run in the original (left/top) pane |
 | `panes` | Array of additional panes |
 | `panes[].command` | Command to run (empty = shell) |
-| `panes[].direction` | `right` or `down` |
+| `panes[].direction` | `right`, `down`, or `stack` (Zellij only) |
 
 ## Requirements
 
