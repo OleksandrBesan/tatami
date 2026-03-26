@@ -209,6 +209,74 @@ func handleResult(result *tui.Result) error {
 		}
 		fmt.Fprintf(os.Stderr, "Not inside a Zellij or Tmux session\n")
 		return nil
+
+	case tui.ActionWorktree:
+		if result.Worktree == nil {
+			return fmt.Errorf("no worktree selected")
+		}
+		wt := result.Worktree
+		tabName := wt.Branch
+		if tabName == "" {
+			tabName = "worktree"
+		}
+
+		// If template selected with panes, run with template layout
+		if result.Template != nil && len(result.Template.Panes) > 0 {
+			wtWs := &workspace.Workspace{
+				Name: tabName,
+				Path: wt.Path,
+				Layout: workspace.Layout{
+					MainCmd: result.Template.MainCmd,
+					Panes:   result.Template.Panes,
+				},
+			}
+			if zellij.IsInsideSession() {
+				wtWs.Layout.Type = workspace.LayoutZellij
+				return zellij.RunWithLayout(wtWs)
+			}
+			if tmux.IsInsideSession() {
+				wtWs.Layout.Type = workspace.LayoutTmux
+				return tmux.RunWithLayout(wtWs)
+			}
+		}
+
+		// If no template but workspace has saved layout, use that
+		if result.Template == nil && len(ws.Layout.Panes) > 0 {
+			wtWs := &workspace.Workspace{
+				Name: tabName,
+				Path: wt.Path,
+				Layout: workspace.Layout{
+					Type:    ws.Layout.Type,
+					MainCmd: ws.Layout.MainCmd,
+					Panes:   ws.Layout.Panes,
+				},
+			}
+			if zellij.IsInsideSession() && ws.Layout.Type == workspace.LayoutZellij {
+				return zellij.RunWithLayout(wtWs)
+			}
+			if tmux.IsInsideSession() && ws.Layout.Type == workspace.LayoutTmux {
+				return tmux.RunWithLayout(wtWs)
+			}
+			// Fallback: use current session type
+			if zellij.IsInsideSession() {
+				wtWs.Layout.Type = workspace.LayoutZellij
+				return zellij.RunWithLayout(wtWs)
+			}
+			if tmux.IsInsideSession() {
+				wtWs.Layout.Type = workspace.LayoutTmux
+				return tmux.RunWithLayout(wtWs)
+			}
+		}
+
+		// Plain - just open new tab
+		if zellij.IsInsideSession() {
+			return zellij.NewTab(wt.Path, tabName)
+		}
+		if tmux.IsInsideSession() {
+			return tmux.NewWindow(wt.Path, tabName)
+		}
+		fmt.Fprintf(os.Stderr, "Not inside a Zellij or Tmux session\n")
+		return nil
 	}
 
 	return nil

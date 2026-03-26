@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/OleksandrBesan/tatami/internal/git"
 	"github.com/OleksandrBesan/tatami/internal/shell"
 	"github.com/OleksandrBesan/tatami/internal/workspace"
 )
@@ -18,6 +19,8 @@ const (
 	ViewLayout
 	ViewTemplates
 	ViewFolderInput
+	ViewWorktree
+	ViewWorktreeActions
 )
 
 // Result represents the outcome of the TUI session
@@ -25,25 +28,28 @@ type Result struct {
 	Action    Action
 	Workspace *workspace.Workspace
 	Template  *workspace.Template
+	Worktree  *git.Worktree
 }
 
 // App is the main Bubbletea model
 type App struct {
-	store        *workspace.Store
-	zellij       *shell.ZellijRunner
-	tmux         *shell.TmuxRunner
-	currentView  View
-	previousView View
-	listView     *ListView
-	createView   *CreateView
-	actionsView  *ActionView
-	layoutEditor *LayoutEditor
-	templateView *TemplateView
-	folderInput  *FolderInput
-	result       *Result
-	width        int
-	height       int
-	err          error
+	store              *workspace.Store
+	zellij             *shell.ZellijRunner
+	tmux               *shell.TmuxRunner
+	currentView        View
+	previousView       View
+	listView           *ListView
+	createView         *CreateView
+	actionsView        *ActionView
+	layoutEditor       *LayoutEditor
+	templateView       *TemplateView
+	folderInput        *FolderInput
+	worktreeView       *WorktreeView
+	worktreeActionView *WorktreeActionView
+	result             *Result
+	width              int
+	height             int
+	err                error
 }
 
 // NewApp creates a new App
@@ -101,6 +107,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a.updateTemplates(msg)
 		case ViewFolderInput:
 			return a.updateFolderInput(msg)
+		case ViewWorktree:
+			return a.updateWorktree(msg)
+		case ViewWorktreeActions:
+			return a.updateWorktreeActions(msg)
 		}
 	}
 
@@ -293,6 +303,13 @@ func (a *App) updateActions(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return a, nil
 		}
 
+		// If worktree action, show worktree picker
+		if action == ActionWorktree {
+			a.worktreeView = NewWorktreeView(ws.Path)
+			a.currentView = ViewWorktree
+			return a, nil
+		}
+
 		a.result = &Result{
 			Action:    action,
 			Workspace: ws,
@@ -340,6 +357,19 @@ func (a *App) updateTemplates(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return a, nil
 		}
 
+		// If came from worktree actions view, execute worktree with template
+		if a.previousView == ViewWorktreeActions {
+			ws := a.worktreeActionView.Workspace()
+			wt := a.worktreeActionView.Worktree()
+			a.result = &Result{
+				Action:    ActionWorktree,
+				Workspace: ws,
+				Worktree:  wt,
+				Template:  tmpl,
+			}
+			return a, tea.Quit
+		}
+
 		// If came from actions view, execute with template
 		ws := a.actionsView.Workspace()
 		a.result = &Result{
@@ -352,6 +382,75 @@ func (a *App) updateTemplates(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	default:
 		return a, a.templateView.Update(msg)
 	}
+}
+
+func (a *App) updateWorktree(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc", "q":
+		// Only go back if in list mode
+		if a.worktreeView.Mode() == WorktreeModeList {
+			a.currentView = ViewActions
+			return a, nil
+		}
+	}
+
+	// Let worktree view handle the input
+	cmd := a.worktreeView.Update(msg)
+
+	// Check if a worktree was selected - show worktree actions
+	if wt := a.worktreeView.Selected(); wt != nil {
+		ws := a.actionsView.Workspace()
+		a.worktreeActionView = NewWorktreeActionView(wt, ws)
+		a.currentView = ViewWorktreeActions
+		return a, nil
+	}
+
+	return a, cmd
+}
+
+func (a *App) updateWorktreeActions(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc", "q":
+		// Reset worktree selection and go back to worktree list
+		a.worktreeView = NewWorktreeView(a.actionsView.Workspace().Path)
+		a.currentView = ViewWorktree
+		return a, nil
+
+	case "enter":
+		action := a.worktreeActionView.Selected()
+		ws := a.worktreeActionView.Workspace()
+		wt := a.worktreeActionView.Worktree()
+
+		switch action {
+		case WorktreeActionWithTemplate:
+			a.templateView = NewTemplateView()
+			a.previousView = ViewWorktreeActions
+			a.currentView = ViewTemplates
+			return a, nil
+
+		case WorktreeActionWithLayout:
+			a.result = &Result{
+				Action:    ActionWorktree,
+				Workspace: ws,
+				Worktree:  wt,
+			}
+			return a, tea.Quit
+
+		case WorktreeActionPlain:
+			a.result = &Result{
+				Action:    ActionWorktree,
+				Workspace: ws,
+				Worktree:  wt,
+				Template:  &workspace.Template{}, // Empty template = plain
+			}
+			return a, tea.Quit
+		}
+
+	default:
+		return a, a.worktreeActionView.Update(msg)
+	}
+
+	return a, nil
 }
 
 // View implements tea.Model
@@ -373,6 +472,10 @@ func (a *App) View() string {
 		return a.templateView.View()
 	case ViewFolderInput:
 		return a.folderInput.View()
+	case ViewWorktree:
+		return a.worktreeView.View()
+	case ViewWorktreeActions:
+		return a.worktreeActionView.View()
 	default:
 		return ""
 	}

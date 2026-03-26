@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/OleksandrBesan/tatami/internal/git"
 	"github.com/OleksandrBesan/tatami/internal/workspace"
 )
 
@@ -16,6 +17,7 @@ const (
 	ActionNewPane
 	ActionWithLayout
 	ActionWithTemplate
+	ActionWorktree
 )
 
 // ActionView displays the action menu
@@ -31,16 +33,27 @@ type ActionView struct {
 func NewActionView(ws *workspace.Workspace, inZellij, inTmux bool) *ActionView {
 	var actions []Action
 
+	// Check if workspace is a git repo (only for local workspaces)
+	isGitRepo := !ws.IsRemote() && git.IsGitRepo(ws.Path)
+
 	if inZellij {
 		// Saved layout first (if available)
 		if ws.Layout.Type == workspace.LayoutZellij && len(ws.Layout.Panes) > 0 {
 			actions = append(actions, ActionWithLayout)
+		}
+		// Git worktree option (only for local git repos)
+		if isGitRepo {
+			actions = append(actions, ActionWorktree)
 		}
 		actions = append(actions, ActionWithTemplate, ActionNewPane, ActionNewTab, ActionCD)
 	} else if inTmux {
 		// Saved layout first (if available)
 		if ws.Layout.Type == workspace.LayoutTmux && len(ws.Layout.Panes) > 0 {
 			actions = append(actions, ActionWithLayout)
+		}
+		// Git worktree option (only for local git repos)
+		if isGitRepo {
+			actions = append(actions, ActionWorktree)
 		}
 		actions = append(actions, ActionWithTemplate, ActionNewPane, ActionNewTab, ActionCD)
 	} else {
@@ -112,6 +125,7 @@ func (a *ActionView) View() string {
 		ActionNewPane:      "new pane",
 		ActionWithTemplate: "with template",
 		ActionWithLayout:   "with saved layout",
+		ActionWorktree:     "open worktree...",
 	}
 
 	for i, action := range a.actions {
