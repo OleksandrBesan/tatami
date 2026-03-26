@@ -109,7 +109,12 @@ func (z *ZellijRunner) FocusFirstPane() error {
 // RunPane opens a new pane with an optional command
 func (z *ZellijRunner) RunPane(path, direction, command string) error {
 	args := []string{"run", "--cwd", path}
-	if direction != "" {
+
+	// Handle stacked panes vs directional splits
+	if direction == "stack" {
+		// Use in-place to stack in current pane area
+		args = append(args, "--in-place")
+	} else if direction != "" {
 		args = append(args, "--direction", direction)
 	}
 	args = append(args, "--")

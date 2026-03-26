@@ -132,6 +132,24 @@ func GetTemplates() []Template {
 			},
 		},
 		{
+			Name:        "nvim-left-claude-term-stack",
+			Description: "nvim LEFT, stacked [claude|term] RIGHT",
+			MainCmd:     "nvim",
+			Panes: []Pane{
+				{Command: "claude", Direction: "right"},
+				{Command: "", Direction: "stack"},
+			},
+		},
+		{
+			Name:        "nvim-left-term-claude-stack",
+			Description: "nvim LEFT, stacked [term|claude] RIGHT",
+			MainCmd:     "nvim",
+			Panes: []Pane{
+				{Command: "", Direction: "right"},
+				{Command: "claude", Direction: "stack"},
+			},
+		},
+		{
 			Name:        "term-left-claude",
 			Description: "term LEFT, claude RIGHT",
 			Panes: []Pane{
